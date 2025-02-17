@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<trivias>
+    <trivia>
+        <question>Which 1990 hit, often associated with the Madchester scene, was performed by The La's?</question>
+        <answer>There She Goes</answer>
+        <answer>Step On</answer>
+        <answer>Fools Gold</answer>
+        <answer correct="true">Unbelievable</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/The_La%27s">The La's are best known for their hit "There She Goes", a song that became synonymous with the Madchester scene of the early 90s.</explanation>
+    </trivia>
+
+    <trivia>
+        <question>Which influential electronic music duo released the album "Dig Your Own Hole" in 1997?</question>
+        <answer>Daft Punk</answer>
+        <answer>Orbital</answer>
+        <answer correct="true">The Chemical Brothers</answer>
+        <answer>Aphex Twin</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/Dig_Your_Own_Hole">The Chemical Brothers released "Dig Your Own Hole" in 1997, which was a significant album in the development of the big beat genre.</explanation>
+    </trivia>
+
+    <trivia>
+        <question>In 1995, which band released the song "Common People", a defining track of the Britpop era?</question>
+        <answer>Blur</answer>
+        <answer correct="true">Pulp</answer>
+        <answer>Oasis</answer>
+        <answer>Supergrass</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/Common_People_(song)">Pulp released "Common People" in 1995, which became one of the most popular and influential songs of the Britpop movement.</explanation>
+    </trivia>
+
+    <trivia>
+        <question>Which artist, known for her ethereal voice and eclectic style, released the album "Debut" in 1993?</question>
+        <answer>Tori Amos</answer>
+        <answer correct="true">Björk</answer>
+        <answer>Kate Bush</answer>
+        <answer>Sinead O'Connor</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/Debut_(Bj%C3%B6rk_album)">Björk released her album "Debut" in 1993, showcasing her unique voice and innovative approach to music.</explanation>
+    </trivia>
+
+    <trivia>
+        <question>Which band released the influential album "Spiderland" in 1991, now considered a touchstone of post-rock?</question>
+        <answer>Godspeed You! Black Emperor</answer>
+        <answer>Mogwai</answer>
+        <answer correct="true">Slint</answer>
+        <answer>Tortoise</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/Spiderland">Slint's album "Spiderland," released in 1991, is considered a seminal work in the post-rock genre.</explanation>
+    </trivia>
+
+    <trivia>
+        <question>In 1994, which band released the album "Crooked Rain, Crooked Rain," showcasing their indie rock style?</question>
+        <answer>Pavement</answer>
+        <answer>Guided by Voices</answer>
+        <answer correct="true">Sonic Youth</answer>
+        <answer>The Pixies</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/Crooked_Rain,_Crooked_Rain">Pavement released "Crooked Rain, Crooked Rain" in 1994, an album that became a cornerstone of 90s indie rock.</explanation>
+    </trivia>
+
+    <trivia>
+        <question>Which band, formed by former members of the band Kyuss, released the album "Rated R" in 2000?</question>
+        <answer>Foo Fighters</answer>
+        <answer correct="true">Queens of the Stone Age</answer>
+        <answer>Eagles of Death Metal</answer>
+        <answer>Them Crooked Vultures</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/Rated_R_(Queens_of_the_Stone_Age_album)">Queens of the Stone Age, formed by ex-members of Kyuss, released "Rated R" in 2000, which became a critical success.</explanation>
+    </trivia>
+
+    <trivia>
+        <question>Which 1992 album by Rage Against the Machine featured the iconic song "Killing in the Name"?</question>
+        <answer correct="true">Rage Against the Machine</answer>
+        <answer>Evil Empire</answer>
+        <answer>The Battle of Los Angeles</answer>
+        <answer>Renegades</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/Rage_Against_the_Machine_(album)">Rage Against the Machine's self-titled debut album released in 1992 featured the song "Killing in the Name," which became one of their most famous tracks.</explanation>
+    </trivia>
+
+    <trivia>
+        <question>Which influential 1991 album by Nirvana signaled the mainstream breakthrough of grunge music?</question>
+        <answer>In Utero</answer>
+        <answer>Bleach</answer>
+        <answer correct="true">Nevermind</answer>
+        <answer>MTV Unplugged in New York</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/Nevermind">Nirvana's album "Nevermind," released in 1991, was a critical and commercial success and marked the mainstream arrival of grunge music.</explanation>
+    </trivia>
+
+    <trivia>
+        <question>In 1997, which artist released the innovative electronica album "OK Computer"?</question>
+        <answer>Radiohead</answer>
+        <answer correct="true">Blur</answer>
+        <answer>Aphex Twin</answer>
+        <answer>Massive Attack</answer>
+        <explanation reference="https://en.wikipedia.org/wiki/OK_Computer">Radiohead released "OK Computer" in 1997, an album that was highly influential in the development of electronic and experimental rock.</explanation>
+    </trivia>
+</trivias>
