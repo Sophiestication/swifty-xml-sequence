@@ -27,16 +27,28 @@ import Foundation
 @testable import SwiftyXMLSequence
 
 struct HTMLTest {
-    @Test func testHTMLElementParsing() async throws {
+    enum Error: Swift.Error {
+        case fileNoSuchFile
+    }
+
+    private typealias HTMLParsingEvents = URLSession.AsyncXMLParsingEvents<HTMLElement>
+
+    private func makeSample1Events() async throws -> HTMLParsingEvents {
         guard let fileURL = Bundle.module.url(forResource: "sample1", withExtension: "html") else {
             #expect(Bool(false), "Failed to find sample1.html file.")
-            return
+            throw Error.fileNoSuchFile
         }
 
         let (events, _) = try await URLSession.shared.xml(
             HTMLElement.self,
             for: fileURL
         )
+
+        return events
+    }
+
+    @Test func testHTMLElementParsing() async throws {
+       let events = try await makeSample1Events()
 
         let sections = try await events.reduce(into: [HTMLElement]()) { result, event in
             if case .begin(let element, _) = event,
@@ -47,5 +59,51 @@ struct HTMLTest {
         }
 
         #expect(sections.count > 0)
+    }
+
+    @Test func testParagraphText() async throws {
+        let events = try await makeSample1Events()
+
+        let paragraph = events.drop(while: { event in
+            if case .begin(let element, let attributes) = event,
+               element == .p
+            {
+                if attributes["id"] == "mwGQ" {
+                    return false
+                }
+            }
+
+            return true
+        })
+
+        var text: String = ""
+        var stack: [HTMLElement] = []
+
+        for try await event in paragraph {
+            switch event {
+            case .begin(let element, _):
+                stack.append(element)
+                break
+
+            case .endElement:
+                _ = stack.popLast()
+                break
+
+            case .text(let string):
+                text += string
+                break
+
+            default:
+                break
+            }
+
+            if stack.isEmpty {
+                break
+            }
+        }
+
+        let expectedText = "The artists associated with Der Blaue Reiter were important pioneers of modern art of the 20th century; they formed a loose network of relationships, but not an art group in the narrower sense like Die Brücke (The Bridge) in Dresden. The work of the affiliated artists is assigned to German Expressionism."
+
+        #expect(text == expectedText)
     }
 }
