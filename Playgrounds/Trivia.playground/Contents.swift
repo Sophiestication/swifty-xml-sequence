@@ -48,15 +48,15 @@ func url(from attributes: [String:String]) -> URL? {
     return URL(string: string)
 }
 
-enum Element {
+enum Element: ElementRepresentable, Equatable {
     case trivia
     case question
     case answer(correct: Bool)
     case explaination(reference: URL?)
     case custom(String)
 
-    init(from string: String, _ attributes: [String:String]) {
-        switch string.lowercased() {
+    init(element elementName: String, attributes: [String:String]) {
+        switch elementName.lowercased() {
         case "trivia":
             self = .trivia
         case "question":
@@ -66,7 +66,7 @@ enum Element {
         case "explanation":
             self = .explaination(reference: url(from: attributes))
         default:
-            self = .custom(string)
+            self = .custom(elementName)
         }
     }
 }
@@ -103,17 +103,16 @@ enum Node {
 Task {
     do {
         let (events, _) = try await URLSession.shared.xml(
+            Element.self,
             for: Bundle.main.url(forResource: "trivia", withExtension: "xml")!
         )
 
         let nodes = events.compactMap { event -> Node? in
             return switch event {
-            case .begin(let string, let attributes):
-                Node.begin(
-                    element: Element(from: string, attributes)
-                )
+            case .begin(let element, let attributes):
+                Node.begin(element: element)
 
-            case .end(let string):
+            case .endElement:
                 .end
 
             case .text(let string):
@@ -129,7 +128,7 @@ Task {
             var elementStack: [Element] = []
         }
 
-        func shouldIgnoreText(for element: Element) -> Bool {
+        @Sendable func shouldIgnoreText(for element: Element) -> Bool {
             switch element {
             case .question, .answer(_), .explaination(_):
                 return false
@@ -138,7 +137,7 @@ Task {
             }
         }
 
-        func shouldPrependLinebreak(for element: Element) -> Bool {
+        @Sendable func shouldPrependLinebreak(for element: Element) -> Bool {
             switch element {
             case .explaination(_):
                 return true
@@ -147,7 +146,7 @@ Task {
             }
         }
 
-        func shouldAppendLinebreak(for element: Element) -> Bool {
+        @Sendable func shouldAppendLinebreak(for element: Element) -> Bool {
             switch element {
             case .trivia, .question, .explaination(_):
                 return true
@@ -158,7 +157,7 @@ Task {
 
         var initialState = State()
 
-        let resultState = try await nodes.reduce(into: initialState) { result, node in
+        let resultState = try await nodes.reduce(into: initialState) { @Sendable result, node in
             switch node {
             case .begin(let element):
                 result.elementStack.append(element)

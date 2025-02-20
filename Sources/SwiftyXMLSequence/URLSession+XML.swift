@@ -25,73 +25,154 @@
 import Foundation
 
 extension URLSession {
-    public struct AsyncXMLParsingEvents: AsyncSequence, Sendable {
-        public typealias Element = XMLParsingEvent
-        public typealias AsyncIterator = AsyncThrowingStream<Element, Error>.AsyncIterator
+    public typealias AsyncXMLParsingEvents<Element> = AsyncThrowingStream <
+        XMLParsingEvent<Element>,
+        any Error
+    > where Element: ElementRepresentable & Equatable & Sendable
 
-        typealias Stream = AsyncThrowingStream<Element, Error>
-        private let stream: Stream
-
-        init<T: AsyncSequence & Sendable>(
-            _ bytes: T,
-            _ response: URLResponse
-        ) where T.Element == UInt8 {
-            self.stream = Stream { continuation in
-                Task { @Sendable in
-                    let parser = XMLPushParser(for: response.suggestedFilename, { event in
-                        continuation.yield(event)
-                    })
-
-                    do {
-                        let bufferSize = 1024
-                        var buffer = Data(capacity: bufferSize)
-
-                        for try await byte in bytes {
-                            buffer.append(byte)
-
-                            if buffer.count == bufferSize {
-                                try parser.push(buffer)
-                                buffer.removeAll()
-                            }
-                        }
-
-                        if !buffer.isEmpty {
-                            try parser.push(buffer)
-                        }
-
-                        try parser.finish()
-                        continuation.finish()
-                    } catch {
-                        continuation.finish(throwing: error)
-                    }
-                }
-            }
-        }
-
-        public func makeAsyncIterator() -> AsyncIterator {
-            stream.makeAsyncIterator()
-        }
-    }
-
-    public func xml(
+    public func xml<Element>(
+        _ elementType: Element.Type = XMLElement.self,
         for url: URL,
         delegate: URLSessionTaskDelegate? = nil
-    ) async throws -> (AsyncXMLParsingEvents, URLResponse) {
+    ) async throws -> (AsyncXMLParsingEvents<Element>, URLResponse) {
         try await xml(
+            elementType,
             for: URLRequest(url: url),
             delegate: delegate
         )
     }
 
-    public func xml(
+    public func xml<Element>(
+        _ elementType: Element.Type = XMLElement.self,
         for request: URLRequest,
         delegate: URLSessionTaskDelegate? = nil
-    ) async throws -> (AsyncXMLParsingEvents, URLResponse) {
-        let (bytes, response) = try await bytes(for: request, delegate: delegate)
-        bytes.task.prefersIncrementalDelivery = true
+    ) async throws -> (AsyncXMLParsingEvents<Element>, URLResponse) {
+        var events: AsyncXMLParsingEvents<Element>? = nil
+        let response = try await withCheckedThrowingContinuation { responseContinuation in
+            events = AsyncXMLParsingEvents<Element> { dataContinuation in
+                let task = self.dataTask(with: request)
 
-        let events = AsyncXMLParsingEvents(bytes, response)
+                task.delegate = XMLParsingSessionDelegate<Element>(
+                    with: responseContinuation,
+                    dataContinuation: dataContinuation
+                )
 
-        return (events, response)
+                task.resume()
+            }
+        }
+
+        return (events!, response)
+    }
+}
+
+private final class XMLParsingSessionDelegate<
+    Element
+>: NSObject, URLSessionDataDelegate, @unchecked Sendable
+    where Element: ElementRepresentable & Equatable & Sendable
+{
+    typealias ResponseContinuation = CheckedContinuation <
+        URLResponse,
+        any Error
+    >
+    private var responseContinuation: ResponseContinuation?
+
+    typealias DataContinuation = URLSession.AsyncXMLParsingEvents <
+        Element
+    >.Continuation
+    private let dataContinuation: DataContinuation?
+
+    private var response: URLResponse? = nil
+    private var parser: XMLPushParser? = nil
+
+    init(
+        with responseContinuation: ResponseContinuation,
+        dataContinuation: DataContinuation
+    ) {
+        self.responseContinuation = responseContinuation
+        self.dataContinuation = dataContinuation
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        dataTask: URLSessionDataTask,
+        didReceive response: URLResponse
+    ) async -> URLSession.ResponseDisposition {
+        self.response = response
+
+        if let continuation = self.responseContinuation {
+            continuation.resume(returning: response)
+            self.responseContinuation = nil
+        }
+
+        return .allow
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        dataTask: URLSessionDataTask,
+        didReceive data: Data
+    ) {
+        if parser == nil {
+            parser = makePushParser()
+        }
+
+        do {
+            try parser!.push(data)
+        } catch {
+            if let continuation = self.dataContinuation {
+                continuation.finish(throwing: error)
+            }
+        }
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didCompleteWithError error: (any Error)?
+    ) {
+        if let continuation = self.responseContinuation,
+           let error {
+            continuation.resume(throwing: error)
+        }
+
+        if let continuation = self.dataContinuation {
+            if let error {
+                continuation.finish(throwing: error)
+            } else {
+                do {
+                    if let parser {
+                        try parser.finish()
+                    }
+
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
+    private func makePushParser() -> XMLPushParser {
+        XMLPushParser(
+            for: response?.suggestedFilename,
+
+            startDocument: {
+                self.dataContinuation?.yield(.beginDocument)
+            }, endDocument: {
+                self.dataContinuation?.yield(.endDocument)
+            }, startElement: { elementName, attributes in
+                let element = Element(
+                    element: elementName,
+                    attributes: attributes
+                )
+                self.dataContinuation?.yield(
+                    .begin(element, attributes: attributes)
+                )
+            }, endElement: {
+                self.dataContinuation?.yield(.endElement)
+            }, characters: { string in
+                self.dataContinuation?.yield(.text(string))
+            }
+        )
     }
 }

@@ -26,6 +26,9 @@ import XCTest
 @testable import SwiftyXMLSequence
 
 final class XMLEventTests: XCTestCase {
+    typealias XMLElement = SwiftyXMLSequence.XMLElement
+    typealias ParsingEvent = XMLParsingEvent<XMLElement>
+
     var session: URLSession!
     var triviaFileURL: URL!
 
@@ -101,7 +104,7 @@ final class XMLEventTests: XCTestCase {
 
     private func parse<S: AsyncSequence>(
         _ events: S
-    ) async throws -> [Node] where S.Element == XMLParsingEvent {
+    ) async throws -> [Node] where S.Element == ParsingEvent {
         var children = [Node]()
 
         for try await event in events {
@@ -114,9 +117,9 @@ final class XMLEventTests: XCTestCase {
 
                 break
 
-            case .begin(let name, let attributes):
+            case .begin(let element, let attributes):
                 let element = Node.element(
-                    name: name,
+                    name: element.name,
                     attributes: attributes,
                     children: try await parse(events)
                 )
@@ -148,7 +151,7 @@ final class XMLEventTests: XCTestCase {
         }
     }
 
-    private func makeXMLParserStream(for url: URL) -> AsyncThrowingStream<XMLParsingEvent, Error> {
+    private func makeXMLParserStream(for url: URL) -> AsyncThrowingStream<ParsingEvent, Error> {
         return AsyncThrowingStream<XMLParsingEvent, Error> { continuation in
             let delegate = XMLParserDelegate({ event in
                 continuation.yield(event)
@@ -167,9 +170,9 @@ final class XMLEventTests: XCTestCase {
     }
 
     private class XMLParserDelegate: NSObject, Foundation.XMLParserDelegate {
-        private let yield: (XMLParsingEvent) -> Void
+        private let yield: (ParsingEvent) -> Void
 
-        init(_ yield: (@escaping (XMLParsingEvent) -> Void)) {
+        init(_ yield: (@escaping (ParsingEvent) -> Void)) {
             self.yield = yield
         }
 
@@ -192,7 +195,11 @@ final class XMLEventTests: XCTestCase {
             qualifiedName qName: String?,
             attributes attributeDict: [String : String]
         ) {
-            yield(.begin(element: elementName, attributes: attributeDict))
+            let element = XMLElement(
+                element: elementName,
+                attributes: attributeDict
+            )
+            yield(.begin(element, attributes: attributeDict))
         }
 
         func parser(
@@ -201,7 +208,7 @@ final class XMLEventTests: XCTestCase {
             namespaceURI: String?,
             qualifiedName qName: String?
         ) {
-            yield(.end(element: elementName))
+            yield(.endElement)
         }
     }
 }

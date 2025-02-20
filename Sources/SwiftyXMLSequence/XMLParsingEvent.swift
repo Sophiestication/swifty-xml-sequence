@@ -24,12 +24,40 @@
 
 import Foundation
 
-public enum XMLParsingEvent: Equatable, Sendable {
+public protocol ElementRepresentable {
+    init(element: String, attributes: [String: String])
+}
+
+public enum XMLParsingEvent<Element>:
+    Equatable, Sendable
+    where Element: ElementRepresentable,
+          Element: Equatable,
+          Element: Sendable
+{
     case beginDocument
     case endDocument
 
-    case begin(element: String, attributes: [String: String])
-    case end(element: String)
+    case begin(_ element: Element, attributes: [String: String])
+    case endElement
 
     case text(String)
+}
+
+public struct XMLElement:
+    ElementRepresentable,
+    Equatable,
+    Sendable,
+    CustomStringConvertible
+{
+    let name: String
+    let attributes: [String: String]
+
+    public init(element: String, attributes: [String: String]) {
+        self.name = element
+        self.attributes = attributes
+    }
+
+    public var description: String {
+        name
+    }
 }

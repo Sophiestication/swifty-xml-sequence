@@ -25,15 +25,38 @@
 import Foundation
 @preconcurrency import libxml2
 
-final class XMLPushParser {
+internal final class XMLPushParser {
     private var parserContext: xmlParserCtxtPtr? = nil
     private let suggestedFilename: UnsafePointer<CChar>?
 
-    private var yield: ((XMLParsingEvent) -> Void)
+    private var startDocument: (() -> Void)
+    private var endDocument: (() -> Void)
 
-    init(for filename: String?, _ yield: (@escaping (XMLParsingEvent) -> Void)) {
+    private var startElement: ((_ elementName: String, _ attributes: [String: String]) -> Void)
+    private var endElement: (() -> Void)
+
+    private var characters: ((_ string: String) -> Void)
+
+    init(
+        for filename: String?,
+
+        startDocument: (@escaping () -> Void),
+        endDocument: (@escaping () -> Void),
+
+        startElement: (@escaping (_ elementName: String, _ attributes: [String: String]) -> Void),
+        endElement: (@escaping () -> Void),
+
+        characters: (@escaping (_ string: String) -> Void)
+    ) {
         self.suggestedFilename = Self.suggestedFilename(for: filename)
-        self.yield = yield
+
+        self.startDocument = startDocument
+        self.endDocument = endDocument
+
+        self.startElement = startElement
+        self.endElement = endElement
+
+        self.characters = characters
     }
 
     deinit {
@@ -103,7 +126,7 @@ final class XMLPushParser {
 
         handler.startDocument = startDocumentSAX
         handler.endDocument = endDocumentSAX
-        
+
         handler.startElement = startElementSAX
         handler.endElement = endElementSAX
 
@@ -114,12 +137,12 @@ final class XMLPushParser {
 
     private static let startDocumentSAX: startDocumentSAXFunc = { context in
         guard let parser = parser(from: context) else { return }
-        parser.yield(.beginDocument)
+        parser.startDocument()
     }
 
     private static let endDocumentSAX: endDocumentSAXFunc = { context in
         guard let parser = parser(from: context) else { return }
-        parser.yield(.endDocument)
+        parser.endDocument()
     }
 
     private static let startElementSAX: startElementSAXFunc = { context, name, attributes in
@@ -146,7 +169,7 @@ final class XMLPushParser {
             }
         }
 
-        parser.yield(.begin(element: elementName, attributes: attributeDict))
+        parser.startElement(elementName, attributeDict)
     }
 
     private static let endElementSAX: endElementSAXFunc = { context, name in
@@ -155,8 +178,8 @@ final class XMLPushParser {
             return
         }
 
-        let elementName = String(cString: name)
-        parser.yield(.end(element: elementName))
+//        let elementName = String(cString: name)
+        parser.endElement()
     }
 
     private static let charactersSAX: charactersSAXFunc = { context, buffer, bufferSize in
@@ -172,7 +195,7 @@ final class XMLPushParser {
         )
 
         if let text = String(data: data, encoding: .utf8) {
-            parser.yield(.text(text))
+            parser.characters(text)
         }
     }
 
