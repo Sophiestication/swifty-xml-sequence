@@ -106,4 +106,24 @@ struct HTMLTest {
 
         #expect(text == expectedText)
     }
+
+    @Test func testElementMatching() async throws {
+        let events = try await makeSample1Events()
+
+        let paragraph = try await events.xmlElement { element, attributes in
+            attributes["id"] == "mwGQ"
+        }
+
+        var text: String = ""
+
+        for try await event in paragraph {
+            if case .text(let string) = event {
+                text += string
+            }
+        }
+
+        let expectedText = "The artists associated with Der Blaue Reiter were important pioneers of modern art of the 20th century; they formed a loose network of relationships, but not an art group in the narrower sense like Die Brücke (The Bridge) in Dresden. The work of the affiliated artists is assigned to German Expressionism."
+
+        #expect(text == expectedText)
+    }
 }
