@@ -110,15 +110,11 @@ struct HTMLTest {
     @Test func testElementMatching() async throws {
         let events = try await makeSample1Events()
 
-        let paragraph = try await events.xmlElement { element, attributes in
+        let text = try await events.xmlElement { element, attributes in
             attributes["id"] == "mwGQ"
-        }
-
-        var text: String = ""
-
-        for try await event in paragraph {
+        }.reduce(into: String()) { partialResult, event in
             if case .text(let string) = event {
-                text += string
+                partialResult += string
             }
         }
 
