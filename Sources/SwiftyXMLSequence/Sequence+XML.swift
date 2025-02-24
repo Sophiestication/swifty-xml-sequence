@@ -25,7 +25,26 @@
 import Foundation
 
 extension AsyncSequence {
-    public func xmlElement<T: Equatable & Sendable>(
+    public func drop<T: Equatable & Sendable>(
+        while predicate: @Sendable @escaping (
+            _ element: T,
+            _ attributes: [String:String]
+        ) async throws -> Bool
+    ) async rethrows -> AsyncThrowingDropWhileSequence<Self>
+        where Element == XMLParsingEvent<T>
+    {
+        drop { event in
+            if case .begin(let element, let attributes) = event {
+                return try await predicate(element, attributes)
+            }
+
+            return true
+        }
+    }
+}
+
+extension AsyncSequence {
+    public func element<T: Equatable & Sendable>(
         matching predicate: @Sendable @escaping (
             _ element: T,
             _ attributes: [String:String]

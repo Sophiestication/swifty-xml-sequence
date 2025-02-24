@@ -31,20 +31,25 @@ struct HTMLTest {
         case fileNoSuchFile
     }
 
-    private typealias HTMLParsingEvents = URLSession.AsyncXMLParsingEvents<HTMLElement>
-
-    private func makeSample1Events() async throws -> HTMLParsingEvents {
-        guard let fileURL = Bundle.module.url(forResource: "sample1", withExtension: "html") else {
-            #expect(Bool(false), "Failed to find sample1.html file.")
+    private func makeEvents<Element: ElementRepresentable & Equatable & Sendable>(
+        _ elementType: Element.Type = XMLElement.self,
+        for filename: String
+    ) async throws -> URLSession.AsyncXMLParsingEvents<Element> {
+        guard let fileURL = Bundle.module.url(forResource: filename, withExtension: "html") else {
+            #expect(Bool(false), "Failed to find \(filename).html file.")
             throw Error.fileNoSuchFile
         }
 
         let (events, _) = try await URLSession.shared.xml(
-            HTMLElement.self,
+            Element.self,
             for: fileURL
         )
 
         return events
+    }
+
+    private func makeSample1Events() async throws -> URLSession.AsyncXMLParsingEvents<HTMLElement> {
+        try await makeEvents(HTMLElement.self, for: "sample1")
     }
 
     @Test func testHTMLElementParsing() async throws {
@@ -59,6 +64,32 @@ struct HTMLTest {
         }
 
         #expect(sections.count > 0)
+    }
+
+    @Test func testDropUntilElement() async throws {
+        let elementId = "mwGQ"
+        let events = try await makeSample1Events()
+
+        let sequence = try await events.drop { element, attributes in
+            if case .p = element,
+               attributes["id"] == elementId {
+                return false
+            }
+
+            return true
+        }
+
+        let foundEvent = try await sequence.first(where: { _ in true })
+
+        var isExpectedElement = false
+
+        if let foundEvent,
+           case .begin(_, let attributes) = foundEvent,
+           attributes["id"] == elementId {
+            isExpectedElement = true
+        }
+
+        #expect(isExpectedElement, "Could not find element with id \(elementId)")
     }
 
     @Test func testParagraphText() async throws {
@@ -110,7 +141,7 @@ struct HTMLTest {
     @Test func testElementMatching() async throws {
         let events = try await makeSample1Events()
 
-        let text = try await events.xmlElement { element, attributes in
+        let text = try await events.element { element, attributes in
             attributes["id"] == "mwGQ"
         }.reduce(into: String()) { partialResult, event in
             if case .text(let string) = event {
@@ -121,5 +152,66 @@ struct HTMLTest {
         let expectedText = "The artists associated with Der Blaue Reiter were important pioneers of modern art of the 20th century; they formed a loose network of relationships, but not an art group in the narrower sense like Die Brücke (The Bridge) in Dresden. The work of the affiliated artists is assigned to German Expressionism."
 
         #expect(text == expectedText)
+    }
+
+    private enum MediaWikiElement: ElementRepresentable, Equatable {
+        case thumbnail(id: String)
+        case html(HTMLElement)
+
+        init(element: String, attributes: [String : String]) {
+            let html = HTMLElement(element: element, attributes: attributes)
+
+            switch html {
+            case .figure:
+                if attributes["typeof"] == "mw:File/Thumb",
+                   let id = attributes["id"] {
+                    self = .thumbnail(id: id)
+                    return
+                }
+
+            default:
+                break
+            }
+
+            self = .html(html)
+        }
+    }
+
+    @Test func testMatchThumbnails() async throws {
+        let events = try await makeEvents(MediaWikiElement.self, for: "sample1")
+
+        var foundURLs = [URL]()
+
+        while true {
+            let element = try await events.element { element, attributes in
+                if case .thumbnail(_) = element {
+                    return true
+                }
+
+                return false
+            }.reduce(into: [XMLParsingEvent<MediaWikiElement>]()) {
+                $0.append($1)
+            }
+
+            guard element.count > 0 else {
+                break
+            }
+
+            let urls = element.reduce(into: [URL]()) { partialResult, event in
+                if case .begin(let element, let attributes) = event,
+                   case .html(let htmlElement) = element,
+                   case .img = htmlElement
+                {
+                    if let string = attributes["src"],
+                       let url = URL(string: string) {
+                        partialResult.append(url)
+                    }
+                }
+            }
+
+            foundURLs.append(contentsOf: urls)
+        }
+
+        #expect(foundURLs.count == 5)
     }
 }
