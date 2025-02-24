@@ -28,7 +28,7 @@ extension AsyncSequence {
     public func drop<T: Equatable & Sendable>(
         while predicate: @Sendable @escaping (
             _ element: T,
-            _ attributes: [String:String]
+            _ attributes: Attributes
         ) async throws -> Bool
     ) async rethrows -> AsyncThrowingDropWhileSequence<Self>
         where Element == ParsingEvent<T>
@@ -47,7 +47,7 @@ extension AsyncSequence {
     public func element<T: Equatable & Sendable>(
         matching predicate: @Sendable @escaping (
             _ element: T,
-            _ attributes: [String:String]
+            _ attributes: Attributes
         ) throws -> Bool
     ) async throws -> AsyncThrowingMatchElementSequence<Self, T>
         where Element == ParsingEvent<T>
@@ -68,7 +68,7 @@ public struct AsyncThrowingMatchElementSequence<Base, T>: AsyncSequence
 
     internal typealias Predicate = (
         _ element: T,
-        _ attributes: [String:String]
+        _ attributes: Attributes
     ) throws -> Bool
 
     private let predicate: Predicate

@@ -96,7 +96,7 @@ final class XMLEventTests: XCTestCase {
         case document(children: [Node])
         case element(
             name: String,
-            attributes: [String: String],
+            attributes: Attributes,
             children: [Node]
         )
         case text(String)

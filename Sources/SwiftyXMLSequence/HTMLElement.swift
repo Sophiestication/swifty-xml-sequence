@@ -92,7 +92,7 @@ public enum HTMLElement:
         "caption": .caption
     ]
 
-    public init(element: String, attributes: [String: String]) {
+    public init(element: String, attributes: Attributes) {
         let key = element.lowercased()
         self = HTMLElement.stringToElement[key] ?? .custom(element)
     }

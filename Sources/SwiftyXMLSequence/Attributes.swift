@@ -24,21 +24,18 @@
 
 import Foundation
 
-public protocol ElementRepresentable {
-    init(element: String, attributes: Attributes)
-}
+public typealias Attributes = Dictionary<String, String>
 
-public enum ParsingEvent<Element>:
-    Equatable, Sendable
-    where Element: ElementRepresentable,
-          Element: Equatable,
-          Element: Sendable
-{
-    case beginDocument
-    case endDocument
+public extension Attributes {
+    func contains(`class` name: String) -> Bool {
+        guard let value = self.first(
+            where: { $0.key.caseInsensitiveCompare("class") == .orderedSame }
+        )?.value else {
+            return false
+        }
 
-    case begin(_ element: Element, attributes: Attributes)
-    case endElement
-
-    case text(String)
+        return value
+            .split(whereSeparator: \.isWhitespace)
+            .contains { $0.caseInsensitiveCompare(name) == .orderedSame }
+    }
 }

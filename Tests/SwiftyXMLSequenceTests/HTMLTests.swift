@@ -158,7 +158,7 @@ struct HTMLTest {
         case thumbnail(id: String)
         case html(HTMLElement)
 
-        init(element: String, attributes: [String : String]) {
+        init(element: String, attributes: Attributes) {
             let html = HTMLElement(element: element, attributes: attributes)
 
             switch html {

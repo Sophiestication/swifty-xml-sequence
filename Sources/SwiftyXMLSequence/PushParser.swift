@@ -32,7 +32,7 @@ internal final class PushParser {
     private var startDocument: (() -> Void)
     private var endDocument: (() -> Void)
 
-    private var startElement: ((_ elementName: String, _ attributes: [String: String]) -> Void)
+    private var startElement: ((_ elementName: String, _ attributes: Attributes) -> Void)
     private var endElement: (() -> Void)
 
     private var characters: ((_ string: String) -> Void)
@@ -43,7 +43,7 @@ internal final class PushParser {
         startDocument: (@escaping () -> Void),
         endDocument: (@escaping () -> Void),
 
-        startElement: (@escaping (_ elementName: String, _ attributes: [String: String]) -> Void),
+        startElement: (@escaping (_ elementName: String, _ attributes: Attributes) -> Void),
         endElement: (@escaping () -> Void),
 
         characters: (@escaping (_ string: String) -> Void)
@@ -152,7 +152,7 @@ internal final class PushParser {
         }
 
         let elementName = String(cString: name)
-        var attributeDict = [String: String]()
+        var attributeDict = Attributes()
 
         if let attributes = attributes {
             var i = 0

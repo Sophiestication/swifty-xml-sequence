@@ -31,9 +31,9 @@ public struct XMLElement:
     CustomStringConvertible
 {
     let name: String
-    let attributes: [String: String]
+    let attributes: Attributes
 
-    public init(element: String, attributes: [String: String]) {
+    public init(element: String, attributes: Attributes) {
         self.name = element
         self.attributes = attributes
     }
