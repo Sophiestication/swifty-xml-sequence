@@ -1,7 +1,7 @@
 //
 // MIT License
 //
-// Copyright (c) 2023 Sophiestication Software, Inc.
+// Copyright (c) 2025 Sophiestication Software, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
