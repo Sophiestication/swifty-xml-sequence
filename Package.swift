@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "SwiftyXMLSequence",
     platforms: [
-        .iOS(.v15), .macOS(.v12), .watchOS(.v8), .tvOS(.v15)
+        .iOS(.v18), .macOS(.v15), .watchOS(.v11), .tvOS(.v18)
     ],
     products: [
         .library(
