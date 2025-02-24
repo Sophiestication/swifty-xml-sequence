@@ -31,7 +31,7 @@ extension AsyncSequence {
             _ attributes: [String:String]
         ) async throws -> Bool
     ) async rethrows -> AsyncThrowingDropWhileSequence<Self>
-        where Element == XMLParsingEvent<T>
+        where Element == ParsingEvent<T>
     {
         drop { event in
             if case .begin(let element, let attributes) = event {
@@ -50,7 +50,7 @@ extension AsyncSequence {
             _ attributes: [String:String]
         ) throws -> Bool
     ) async throws -> AsyncThrowingMatchElementSequence<Self, T>
-        where Element == XMLParsingEvent<T>
+        where Element == ParsingEvent<T>
     {
         return AsyncThrowingMatchElementSequence(
             base: self,
@@ -61,7 +61,7 @@ extension AsyncSequence {
 
 public struct AsyncThrowingMatchElementSequence<Base, T>: AsyncSequence
     where Base: AsyncSequence,
-          Base.Element == XMLParsingEvent<T>,
+          Base.Element == ParsingEvent<T>,
           T: Equatable & Sendable
 {
     private let base: Base
@@ -83,7 +83,7 @@ public struct AsyncThrowingMatchElementSequence<Base, T>: AsyncSequence
     }
 
     public struct Iterator: AsyncIteratorProtocol {
-        public typealias Element = XMLParsingEvent<T>
+        public typealias Element = ParsingEvent<T>
 
         private var base: Base.AsyncIterator
         private let predicate: Predicate

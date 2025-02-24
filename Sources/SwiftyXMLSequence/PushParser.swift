@@ -25,7 +25,7 @@
 import Foundation
 @preconcurrency import libxml2
 
-internal final class XMLPushParser {
+internal final class PushParser {
     private var parserContext: xmlParserCtxtPtr? = nil
     private let suggestedFilename: UnsafePointer<CChar>?
 
@@ -87,7 +87,7 @@ internal final class XMLPushParser {
 
     private func prepared(_ parser: xmlParserCtxtPtr?) -> xmlParserCtxtPtr {
         guard let preparedContext = self.parserContext else {
-            let context = Unmanaged<XMLPushParser>
+            let context = Unmanaged<PushParser>
                 .passUnretained(self)
                 .toOpaque()
             var handler = Self.SAXHandler
@@ -116,7 +116,7 @@ internal final class XMLPushParser {
     private func raiseErrorIfNeeded(for errorCode: Int32, _ parser: xmlParserCtxtPtr) throws {
         if errorCode != XML_ERR_NONE.rawValue {
             if let lastError = xmlCtxtGetLastError(parser) {
-                throw XMLParsingError(from: lastError)
+                throw ParsingError(from: lastError)
             }
         }
     }
@@ -199,12 +199,12 @@ internal final class XMLPushParser {
         }
     }
 
-    private static func parser(from context: UnsafeMutableRawPointer?) -> XMLPushParser? {
+    private static func parser(from context: UnsafeMutableRawPointer?) -> PushParser? {
         guard let context = context else {
             return nil
         }
 
-        let parser = Unmanaged<XMLPushParser>
+        let parser = Unmanaged<PushParser>
             .fromOpaque(context)
             .takeUnretainedValue()
         return parser

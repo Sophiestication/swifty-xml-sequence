@@ -27,7 +27,7 @@ import XCTest
 
 final class XMLEventTests: XCTestCase {
     typealias XMLElement = SwiftyXMLSequence.XMLElement
-    typealias ParsingEvent = XMLParsingEvent<XMLElement>
+    typealias XMLParsingEvent = ParsingEvent<XMLElement>
 
     var session: URLSession!
     var triviaFileURL: URL!
@@ -104,7 +104,7 @@ final class XMLEventTests: XCTestCase {
 
     private func parse<S: AsyncSequence>(
         _ events: S
-    ) async throws -> [Node] where S.Element == ParsingEvent {
+    ) async throws -> [Node] where S.Element == XMLParsingEvent {
         var children = [Node]()
 
         for try await event in events {
@@ -144,15 +144,15 @@ final class XMLEventTests: XCTestCase {
     private func tryAndFailIfNeeded(_ action: () async throws -> Void) async {
         do {
             try await action()
-        } catch let error as XMLParsingError {
+        } catch let error as ParsingError {
             XCTFail("Line \(error.line); Column \(error.column): \(error.message)")
         } catch {
             XCTFail("Error occurred: \(error)")
         }
     }
 
-    private func makeXMLParserStream(for url: URL) -> AsyncThrowingStream<ParsingEvent, Error> {
-        return AsyncThrowingStream<XMLParsingEvent, Error> { continuation in
+    private func makeXMLParserStream(for url: URL) -> AsyncThrowingStream<XMLParsingEvent, Error> {
+        return AsyncThrowingStream<ParsingEvent, Error> { continuation in
             let delegate = XMLParserDelegate({ event in
                 continuation.yield(event)
             })
@@ -170,9 +170,9 @@ final class XMLEventTests: XCTestCase {
     }
 
     private class XMLParserDelegate: NSObject, Foundation.XMLParserDelegate {
-        private let yield: (ParsingEvent) -> Void
+        private let yield: (XMLParsingEvent) -> Void
 
-        init(_ yield: (@escaping (ParsingEvent) -> Void)) {
+        init(_ yield: (@escaping (XMLParsingEvent) -> Void)) {
             self.yield = yield
         }
 

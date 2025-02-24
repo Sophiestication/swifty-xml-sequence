@@ -25,8 +25,8 @@
 import Foundation
 
 extension URLSession {
-    public typealias AsyncXMLParsingEvents<Element> = AsyncThrowingStream <
-        XMLParsingEvent<Element>,
+    public typealias AsyncXMLParsingEvents<Element> = AsyncThrowingStream<
+        ParsingEvent<Element>,
         any Error
     > where Element: ElementRepresentable & Equatable & Sendable
 
@@ -52,7 +52,7 @@ extension URLSession {
             events = AsyncXMLParsingEvents<Element> { dataContinuation in
                 let task = self.dataTask(with: request)
 
-                task.delegate = XMLParsingSessionDelegate<Element>(
+                task.delegate = ParsingSessionDelegate<Element>(
                     with: responseContinuation,
                     dataContinuation: dataContinuation
                 )
@@ -65,7 +65,7 @@ extension URLSession {
     }
 }
 
-private final class XMLParsingSessionDelegate<
+private final class ParsingSessionDelegate<
     Element
 >: NSObject, URLSessionDataDelegate, @unchecked Sendable
     where Element: ElementRepresentable & Equatable & Sendable
@@ -82,7 +82,7 @@ private final class XMLParsingSessionDelegate<
     private let dataContinuation: DataContinuation?
 
     private var response: URLResponse? = nil
-    private var parser: XMLPushParser? = nil
+    private var parser: PushParser? = nil
 
     init(
         with responseContinuation: ResponseContinuation,
@@ -152,8 +152,8 @@ private final class XMLParsingSessionDelegate<
         }
     }
 
-    private func makePushParser() -> XMLPushParser {
-        XMLPushParser(
+    private func makePushParser() -> PushParser {
+        PushParser(
             for: response?.suggestedFilename,
 
             startDocument: {

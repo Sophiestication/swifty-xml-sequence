@@ -189,7 +189,7 @@ struct HTMLTest {
                 }
 
                 return false
-            }.reduce(into: [XMLParsingEvent<MediaWikiElement>]()) {
+            }.reduce(into: [ParsingEvent<MediaWikiElement>]()) {
                 $0.append($1)
             }
 

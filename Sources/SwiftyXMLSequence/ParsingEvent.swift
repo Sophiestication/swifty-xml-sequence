@@ -23,33 +23,22 @@
 //
 
 import Foundation
-import libxml2
 
-public struct XMLParsingError: Error {
-    public let domain: Int
-    public let code: Int
-
-    public let message: String
-
-    public let filename: String?
-    public let line: Int
-    public let column: Int
+public protocol ElementRepresentable {
+    init(element: String, attributes: [String: String])
 }
 
-extension XMLParsingError {
-    init(from xmlError: xmlErrorPtr) {
-        let error = xmlError.pointee
+public enum ParsingEvent<Element>:
+    Equatable, Sendable
+    where Element: ElementRepresentable,
+          Element: Equatable,
+          Element: Sendable
+{
+    case beginDocument
+    case endDocument
 
-        self.domain = Int(error.domain)
-        self.code = Int(error.code)
+    case begin(_ element: Element, attributes: [String: String])
+    case endElement
 
-        self.message = String(cString: error.message)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        self.filename = error.file != nil ?
-            String(cString: error.file) : nil
-
-        self.line = Int(error.line)
-        self.column = Int(error.line)
-    }
+    case text(String)
 }
