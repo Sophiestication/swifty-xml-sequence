@@ -92,6 +92,31 @@ struct HTMLTest {
         #expect(isExpectedElement, "Could not find element with id \(elementId)")
     }
 
+    @Test func testFilterElement() async throws {
+        let elementId = "mwAQ"
+        let events = try await makeSample1Events()
+
+        let text = try await events.element(matching: { element, attributes in
+            attributes["id"] == elementId
+        }).filter { element, attributes in
+            return switch element {
+            case .figure, .style:
+                false
+            default:
+                true
+            }
+        }.reduce(String()) { partialResult, event in
+            return switch event {
+            case .text(let string):
+                partialResult.appending(string)
+            default:
+                partialResult
+            }
+        }
+
+        #expect(text.count > 0)
+    }
+
     @Test func testParagraphText() async throws {
         let events = try await makeSample1Events()
 
