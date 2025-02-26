@@ -166,7 +166,7 @@ struct HTMLTest {
     @Test func testElementMatching() async throws {
         let events = try await makeSample1Events()
 
-        let text = try await events.element { element, attributes in
+        let text = try await events.collect { element, attributes in
             attributes["id"] == "mwGQ"
         }.reduce(into: String()) { partialResult, event in
             if case .text(let string) = event {
@@ -208,7 +208,7 @@ struct HTMLTest {
         var foundURLs = [URL]()
 
         while true {
-            let element = try await events.element { element, attributes in
+            let element = try await events.collect { element, attributes in
                 if case .thumbnail(_) = element {
                     return true
                 }
