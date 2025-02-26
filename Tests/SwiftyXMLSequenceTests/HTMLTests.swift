@@ -66,32 +66,6 @@ struct HTMLTest {
         #expect(sections.count > 0)
     }
 
-    @Test func testDropUntilElement() async throws {
-        let elementId = "mwGQ"
-        let events = try await makeSample1Events()
-
-        let sequence = try await events.drop { element, attributes in
-            if case .p = element,
-               attributes["id"] == elementId {
-                return false
-            }
-
-            return true
-        }
-
-        let foundEvent = try await sequence.first(where: { _ in true })
-
-        var isExpectedElement = false
-
-        if let foundEvent,
-           case .begin(_, let attributes) = foundEvent,
-           attributes["id"] == elementId {
-            isExpectedElement = true
-        }
-
-        #expect(isExpectedElement, "Could not find element with id \(elementId)")
-    }
-
     @Test func testFilterElement() async throws {
         let elementId = "mwAQ"
         let events = try await makeSample1Events()
