@@ -96,9 +96,9 @@ struct HTMLTest {
         let elementId = "mwAQ"
         let events = try await makeSample1Events()
 
-        let text = try await events.element(matching: { element, attributes in
+        let text = try await events.collect { element, attributes in
             attributes["id"] == elementId
-        }).filter { element, attributes in
+        }.filter { element, attributes in
             return switch element {
             case .figure, .style:
                 false
