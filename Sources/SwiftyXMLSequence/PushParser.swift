@@ -64,7 +64,9 @@ internal final class PushParser {
             xmlFreeParserCtxt(parserContext)
         }
 
-        free(UnsafeMutablePointer(mutating: suggestedFilename))
+        if let suggestedFilename {
+            free(UnsafeMutablePointer(mutating: suggestedFilename))
+        }
     }
 
     func push(_ data: Data) throws {
