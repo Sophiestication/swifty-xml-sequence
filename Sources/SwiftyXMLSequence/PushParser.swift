@@ -180,13 +180,10 @@ internal final class PushParser {
             return
         }
 
-        let data = Data(
-            bytesNoCopy: UnsafeMutableRawPointer(mutating: buffer),
-            count: Int(bufferSize),
-            deallocator: .none
-        )
-
-        if let text = String(data: data, encoding: .utf8) {
+        if let text = String(
+            bytes: UnsafeBufferPointer(start: buffer, count: Int(bufferSize)),
+            encoding: .utf8
+        ) {
             parser.characters(text)
         }
     }
