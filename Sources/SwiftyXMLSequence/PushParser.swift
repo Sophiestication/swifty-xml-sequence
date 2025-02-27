@@ -123,6 +123,8 @@ internal final class PushParser {
         if errorCode != XML_ERR_NONE.rawValue {
             if let lastError = xmlCtxtGetLastError(parser) {
                 throw ParsingError(from: lastError)
+            } else {
+                throw ParsingError(with: Int(errorCode), context: parser)
             }
         }
     }

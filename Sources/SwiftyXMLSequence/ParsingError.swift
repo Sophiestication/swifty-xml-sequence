@@ -50,4 +50,21 @@ public struct ParsingError: Error {
         self.line = Int(error.line)
         self.column = Int(error.line)
     }
+
+    init(with errorCode: Int, context: xmlParserCtxtPtr) {
+        self.domain = Int(XML_FROM_NONE.rawValue)
+        self.code = errorCode
+        
+        self.message = "XML Parsing Error: \(errorCode)"
+
+        if let input = context.pointee.input,
+           let file = input.pointee.filename {
+            self.filename = String(cString: file)
+        } else {
+            self.filename = nil
+        }
+
+        self.line = Int(xmlSAX2GetLineNumber(context))
+        self.column = Int(xmlSAX2GetColumnNumber(context))
+    }
 }
