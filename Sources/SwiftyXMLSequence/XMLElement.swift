@@ -26,8 +26,6 @@ import Foundation
 
 public struct XMLElement:
     ElementRepresentable,
-    Equatable,
-    Sendable,
     CustomStringConvertible
 {
     let name: String

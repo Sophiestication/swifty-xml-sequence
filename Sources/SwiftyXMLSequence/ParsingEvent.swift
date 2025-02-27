@@ -24,15 +24,12 @@
 
 import Foundation
 
-public protocol ElementRepresentable {
+public protocol ElementRepresentable: Equatable, Sendable {
     init(element: String, attributes: Attributes)
 }
 
-public enum ParsingEvent<Element>:
-    Equatable, Sendable
-    where Element: ElementRepresentable,
-          Element: Equatable,
-          Element: Sendable
+public enum ParsingEvent<Element>: Equatable, Sendable
+    where Element: ElementRepresentable
 {
     case beginDocument
     case endDocument

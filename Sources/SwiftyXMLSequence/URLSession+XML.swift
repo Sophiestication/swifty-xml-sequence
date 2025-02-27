@@ -28,7 +28,7 @@ extension URLSession {
     public typealias AsyncXMLParsingEvents<Element> = AsyncThrowingStream<
         ParsingEvent<Element>,
         any Error
-    > where Element: ElementRepresentable & Equatable & Sendable
+    > where Element: ElementRepresentable
 
     public func xml<Element>(
         _ elementType: Element.Type = XMLElement.self,
@@ -68,7 +68,7 @@ extension URLSession {
 private final class ParsingSessionDelegate<
     Element
 >: NSObject, URLSessionDataDelegate, @unchecked Sendable
-    where Element: ElementRepresentable & Equatable & Sendable
+    where Element: ElementRepresentable
 {
     typealias ResponseContinuation = CheckedContinuation <
         URLResponse,

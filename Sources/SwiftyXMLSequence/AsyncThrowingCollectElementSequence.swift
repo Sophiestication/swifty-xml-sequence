@@ -25,7 +25,7 @@
 import Foundation
 
 extension AsyncSequence {
-    public func collect<T: Equatable & Sendable>(
+    public func collect<T: ElementRepresentable>(
         _ matching: @Sendable @escaping (
             _ element: T,
             _ attributes: Attributes
@@ -44,7 +44,7 @@ public struct AsyncThrowingCollecyElementSequence<Base, T>: AsyncSequence, Senda
     where Base: AsyncSequence,
           Base: Sendable,
           Base.Element == ParsingEvent<T>,
-          T: Equatable & Sendable
+          T: ElementRepresentable
 {
     private let base: Base
 

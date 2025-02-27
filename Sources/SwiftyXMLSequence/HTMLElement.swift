@@ -24,11 +24,7 @@
 
 import Foundation
 
-public enum HTMLElement:
-    Equatable,
-    Sendable,
-    ElementRepresentable
-{
+public enum HTMLElement: ElementRepresentable {
     case html,
 
          head, meta, title, link, style, script,

@@ -25,7 +25,7 @@
 import Foundation
 
 extension AsyncSequence {
-    public func filter<T: Equatable & Sendable>(
+    public func filter<T: ElementRepresentable>(
         _ isIncluded: @Sendable @escaping (
             _ element: T,
             _ attributes: Attributes
@@ -44,7 +44,7 @@ public struct AsyncThrowingFilterElementSequence<Base, T>: AsyncSequence, Sendab
     where Base: AsyncSequence,
           Base: Sendable,
           Base.Element == ParsingEvent<T>,
-          T: Equatable & Sendable
+          T: ElementRepresentable
 {
     private let base: Base
 
