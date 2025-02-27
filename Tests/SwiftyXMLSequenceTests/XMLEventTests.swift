@@ -171,6 +171,7 @@ final class XMLEventTests: XCTestCase {
 
     private class XMLParserDelegate: NSObject, Foundation.XMLParserDelegate {
         private let yield: (XMLParsingEvent) -> Void
+        private var elementStack: [XMLElement] = []
 
         init(_ yield: (@escaping (XMLParsingEvent) -> Void)) {
             self.yield = yield
@@ -199,6 +200,9 @@ final class XMLEventTests: XCTestCase {
                 element: elementName,
                 attributes: attributeDict
             )
+
+            elementStack.append(element)
+
             yield(.begin(element, attributes: attributeDict))
         }
 
@@ -208,7 +212,9 @@ final class XMLEventTests: XCTestCase {
             namespaceURI: String?,
             qualifiedName qName: String?
         ) {
-            yield(.endElement)
+            if let element = elementStack.popLast() {
+                yield(.end(element))
+            }
         }
     }
 }

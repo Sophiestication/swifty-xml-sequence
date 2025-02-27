@@ -84,6 +84,8 @@ private final class ParsingSessionDelegate<
     private var response: URLResponse? = nil
     private var parser: PushParser? = nil
 
+    private var elementStack: [Element] = []
+
     init(
         with responseContinuation: ResponseContinuation,
         dataContinuation: DataContinuation
@@ -165,11 +167,18 @@ private final class ParsingSessionDelegate<
                     element: elementName,
                     attributes: attributes
                 )
+
+                self.elementStack.append(element)
+
                 self.dataContinuation?.yield(
                     .begin(element, attributes: attributes)
                 )
             }, endElement: {
-                self.dataContinuation?.yield(.endElement)
+                guard let element = self.elementStack.popLast() else {
+                    return // we rely on libxml2 always calling with matching start/end events
+                }
+
+                self.dataContinuation?.yield(.end(element))
             }, characters: { string in
                 self.dataContinuation?.yield(.text(string))
             }

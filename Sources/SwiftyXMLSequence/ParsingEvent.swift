@@ -38,7 +38,7 @@ public enum ParsingEvent<Element>:
     case endDocument
 
     case begin(_ element: Element, attributes: Attributes)
-    case endElement
+    case end(_ element: Element)
 
     case text(String)
 }

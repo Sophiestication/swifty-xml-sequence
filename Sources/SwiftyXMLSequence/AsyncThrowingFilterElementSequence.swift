@@ -93,7 +93,7 @@ public struct AsyncThrowingFilterElementSequence<Base, T>: AsyncSequence, Sendab
                     case .begin(_, attributes: _):
                         depth += 1
                         break
-                    case .endElement:
+                    case .end(_):
                         depth -= 1
                         break
                     default:

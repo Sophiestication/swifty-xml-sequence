@@ -115,7 +115,7 @@ struct HTMLTest {
                 stack.append(element)
                 break
 
-            case .endElement:
+            case .end(_):
                 _ = stack.popLast()
                 break
 

@@ -95,7 +95,7 @@ public struct AsyncThrowingCollecyElementSequence<Base, T>: AsyncSequence, Senda
                 switch nextEvent {
                 case .begin(_, attributes: _):
                     depth += 1
-                case .endElement:
+                case .end(_):
                     depth -= 1
                 default:
                     break
