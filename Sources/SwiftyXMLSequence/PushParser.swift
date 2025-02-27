@@ -90,7 +90,13 @@ internal final class PushParser {
             let context = Unmanaged<PushParser>
                 .passUnretained(self)
                 .toOpaque()
-            var handler = Self.SAXHandler
+
+            var handler = xmlSAXHandler()
+            handler.startDocument = startDocumentSAX
+            handler.endDocument = endDocumentSAX
+            handler.startElement = startElementSAX
+            handler.endElement = endElementSAX
+            handler.characters = charactersSAX
 
             self.parserContext = xmlCreatePushParserCtxt(
                 &handler,
@@ -121,31 +127,17 @@ internal final class PushParser {
         }
     }
 
-    private static let SAXHandler: xmlSAXHandler = {
-        var handler = xmlSAXHandler()
-
-        handler.startDocument = startDocumentSAX
-        handler.endDocument = endDocumentSAX
-
-        handler.startElement = startElementSAX
-        handler.endElement = endElementSAX
-
-        handler.characters = charactersSAX
-
-        return handler
-    }()
-
-    private static let startDocumentSAX: startDocumentSAXFunc = { context in
+    private let startDocumentSAX: startDocumentSAXFunc = { context in
         guard let parser = parser(from: context) else { return }
         parser.startDocument()
     }
 
-    private static let endDocumentSAX: endDocumentSAXFunc = { context in
+    private let endDocumentSAX: endDocumentSAXFunc = { context in
         guard let parser = parser(from: context) else { return }
         parser.endDocument()
     }
 
-    private static let startElementSAX: startElementSAXFunc = { context, name, attributes in
+    private let startElementSAX: startElementSAXFunc = { context, name, attributes in
         guard let parser = parser(from: context),
               let name = name else {
             return
@@ -172,7 +164,7 @@ internal final class PushParser {
         parser.startElement(elementName, attributeDict)
     }
 
-    private static let endElementSAX: endElementSAXFunc = { context, name in
+    private let endElementSAX: endElementSAXFunc = { context, name in
         guard let parser = parser(from: context),
               let name = name else {
             return
@@ -182,7 +174,7 @@ internal final class PushParser {
         parser.endElement()
     }
 
-    private static let charactersSAX: charactersSAXFunc = { context, buffer, bufferSize in
+    private let charactersSAX: charactersSAXFunc = { context, buffer, bufferSize in
         guard let parser = parser(from: context),
               let buffer = buffer else {
             return
