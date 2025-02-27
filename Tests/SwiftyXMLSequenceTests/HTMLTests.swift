@@ -153,6 +153,30 @@ struct HTMLTest {
         #expect(text == expectedText)
     }
 
+    @Test func testFollowingElementFiltering() async throws {
+        let events = try await makeEvents(HTMLElement.self, for: "sample2")
+
+        let text = try await events.collect { element, attributes in
+            attributes["id"] == "mwRg"
+        }.filter { element, attributes in
+           if attributes.contains(class: "mw-ref") {
+                return false
+            }
+
+            return true
+        }.reduce(into: []) { partialResult, event in
+            partialResult.append(event)
+        }.reduce(into: String()) { partialResult, event in
+            if case .text(let string) = event {
+                partialResult += string
+            }
+        }
+
+        let expectedText = "In the 1930s, during the Great Depression, Art Deco gradually became more subdued. A sleeker form of the style, called Streamline Moderne, appeared in the 1930s, featuring curving forms and smooth, polished surfaces. Art Deco was a truly international style, but its dominance ended with the beginning of World War II and the rise of the strictly functional and unadorned styles of modern architecture and the International Style of architecture that followed."
+
+        #expect(text == expectedText)
+    }
+
     private enum MediaWikiElement: ElementRepresentable, Equatable {
         case thumbnail(id: String)
         case html(HTMLElement)

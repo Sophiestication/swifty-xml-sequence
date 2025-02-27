@@ -19,7 +19,7 @@ let package = Package(
         .testTarget(
             name: "SwiftyXMLSequenceTests",
             dependencies: ["SwiftyXMLSequence"],
-            resources: [ .copy("trivia.xml"), .copy("sample1.html") ]
+            resources: [ .copy("trivia.xml"), .copy("sample1.html"), .copy("sample2.html") ]
         ),
     ]
 )

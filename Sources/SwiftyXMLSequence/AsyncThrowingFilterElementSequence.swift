@@ -76,30 +76,33 @@ public struct AsyncThrowingFilterElementSequence<Base, T>: AsyncSequence, Sendab
         }
 
         public mutating func next() async throws -> Element? {
-            let nextEvent = try await base.next()
+            var depth = 0
 
-            if case .begin(let element, let attributes) = nextEvent {
-                if try predicate(element, attributes) == false {
-                    var depth = 1
-
-                    while let event = try await base.next() {
-                        switch event {
-                        case .begin(_, attributes: _):
-                            depth += 1
-                        case .endElement:
-                            depth -= 1
-
-                            if depth == 0 {
-                                return try await base.next()
-                            }
-                        default:
-                            break
+            while let nextEvent = try await base.next() {
+                if depth == 0 {
+                    if case .begin(let element, let attributes) = nextEvent {
+                        if try predicate(element, attributes) == false {
+                            depth = 1
+                            continue
                         }
+                    }
+
+                    return nextEvent
+                } else {
+                    switch nextEvent {
+                    case .begin(_, attributes: _):
+                        depth += 1
+                        break
+                    case .endElement:
+                        depth -= 1
+                        break
+                    default:
+                        break
                     }
                 }
             }
 
-            return nextEvent
+            return nil
         }
     }
 }
