@@ -13,13 +13,28 @@ let package = Package(
             name: "SwiftyXMLSequence",
             targets: ["SwiftyXMLSequence"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-algorithms.git", from: "1.2.0")
+    ],
     targets: [
         .target(
-            name: "SwiftyXMLSequence"),
+            name: "SwiftyXMLSequence",
+            dependencies: [
+                .product(name: "Algorithms", package: "swift-algorithms")
+            ]
+        ),
         .testTarget(
             name: "SwiftyXMLSequenceTests",
-            dependencies: ["SwiftyXMLSequence"],
-            resources: [ .copy("trivia.xml"), .copy("sample1.html"), .copy("sample2.html") ]
+            dependencies: [
+                "SwiftyXMLSequence",
+                .product(name: "Algorithms", package: "swift-algorithms")
+            ],
+            resources: [
+                .copy("trivia.xml"),
+                .copy("sample1.html"),
+                .copy("sample2.html"),
+                .copy("whitespace-collapse.html")
+            ]
         ),
     ]
 )
