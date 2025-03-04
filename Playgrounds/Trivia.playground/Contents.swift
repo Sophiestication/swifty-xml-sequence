@@ -112,8 +112,8 @@ Task {
             case .begin(let element, let attributes):
                 Node.begin(element: element)
 
-            case .endElement:
-                .end
+            case .end(_):
+                 .end
 
             case .text(let string):
                 .text(string)
