@@ -1,7 +1,7 @@
 //
 // MIT License
 //
-// Copyright (c) 2023 Sophiestication Software, Inc.
+// Copyright (c) 2025 Sophiestication Software, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -93,13 +93,6 @@ extension Element {
     }
 }
 
-enum Node {
-    case begin(element: Element)
-    case end
-
-    case text(String)
-}
-
 Task {
     do {
         let (events, _) = try await URLSession.shared.xml(
@@ -107,94 +100,66 @@ Task {
             for: Bundle.main.url(forResource: "trivia", withExtension: "xml")!
         )
 
-        let nodes = events.compactMap { event -> Node? in
-            return switch event {
-            case .begin(let element, let attributes):
-                Node.begin(element: element)
+        actor ElementStack {
+            private var stack: [Element] = []
 
-            case .end(_):
-                 .end
+            func push(_ element: Element) { stack.append(element) }
+            func pop() { stack.removeLast() }
 
-            case .text(let string):
-                .text(string)
+            var style: AttributeContainer { stack.last?.style ?? AttributeContainer() }
+        }
 
+        let elementStack = ElementStack()
+
+        let attributedString = try await events.map(whitespace: { element, attributes in
+            return switch element {
+            case .trivia, .custom(_):
+                .collapse(inline: false)
             default:
+                .preserve
+            }
+        }).compactMap { (event: WhitespaceParsingEvent<Element>) -> ParsingEvent<Element>? in
+            return switch event {
+            case .event(let event):
+                event
+            case .whitespace(_, _):
                 nil
             }
-        }
+        }.compactMap { (event) -> AttributedString? in
+            switch event {
+            case .begin(let element, let attributes):
+                await elementStack.push(element)
 
-        struct State {
-            var attributedString = AttributedString()
-            var elementStack: [Element] = []
-        }
-
-        @Sendable func shouldIgnoreText(for element: Element) -> Bool {
-            switch element {
-            case .question, .answer(_), .explaination(_):
-                return false
-            default:
-                return true
-            }
-        }
-
-        @Sendable func shouldPrependLinebreak(for element: Element) -> Bool {
-            switch element {
-            case .explaination(_):
-                return true
-            default:
-                return false
-            }
-        }
-
-        @Sendable func shouldAppendLinebreak(for element: Element) -> Bool {
-            switch element {
-            case .trivia, .question, .explaination(_):
-                return true
-            default:
-                return false
-            }
-        }
-
-        var initialState = State()
-
-        let resultState = try await nodes.reduce(into: initialState) { @Sendable result, node in
-            switch node {
-            case .begin(let element):
-                result.elementStack.append(element)
-
-            case .end:
-                if let currentElement = result.elementStack.last {
-                    if shouldAppendLinebreak(for: currentElement) {
-                        result.attributedString.append(AttributedString("\n"))
-                    }
+                return switch element {
+                case .answer(let correct):
+                    correct ? AttributedString("✓ ") : nil
+                case .explaination(_):
+                    AttributedString("\n")
+                default:
+                    nil
                 }
 
-                _ = result.elementStack.popLast()
+            case .end(let element):
+                await elementStack.pop()
+
+                return switch element {
+                case .answer(_):
+                    AttributedString("\n")
+                case .question, .explaination(_):
+                    AttributedString("\n\n")
+                default:
+                    nil
+                }
 
             case .text(let string):
-                if let currentElement = result.elementStack.last {
-                    if shouldIgnoreText(for: currentElement) == false {
-                        if shouldPrependLinebreak(for: currentElement) {
-                            result.attributedString.append(AttributedString("\n"))
-                        }
+                return await AttributedString(string, attributes: elementStack.style)
 
-                        if case .answer(let correct) = currentElement,
-                           correct == true {
-                            result.attributedString.append(
-                                AttributedString("✓ ", attributes: currentElement.style)
-                            )
-                        }
-
-                        result.attributedString.append(
-                            AttributedString(string, attributes: currentElement.style)
-                        )
-                        result.attributedString.append(AttributedString("\n"))
-                    }
-                }
+            default:
+                return nil
             }
+        }.reduce(AttributedString()) { @Sendable result, attributedString in
+            result + attributedString
         }
-
-        let attributedString = resultState.attributedString
 
         struct PlaygroundView: View {
             let attributedString: AttributedString
