@@ -32,7 +32,7 @@ public enum WhitespaceCollapsingBehavior: Equatable, Sendable {
 public enum WhitespaceParsingEvent<Element>: Equatable, Sendable
     where Element: ElementRepresentable
 {
-    case event(ParsingEvent<Element>)
+    case event(ParsingEvent<Element>, WhitespaceCollapsingBehavior)
     case whitespace(String, WhitespaceCollapsingBehavior)
 }
 
@@ -114,7 +114,9 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
                             )
                         }
 
-                        newPrepared.append(.event(event))
+                        newPrepared.append(
+                            .event(event, behaviorStack.last ?? .collapse(inline: false))
+                        )
                         behaviorStack.append(
                             whitespaceBehavior(for: element, attributes)
                         )
@@ -131,7 +133,9 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
                             )
                         }
 
-                        newPrepared.append(.event(event))
+                        newPrepared.append(
+                            .event(event, behaviorStack.last ?? .collapse(inline: false))
+                        )
                         behaviorStack.removeLast()
 
                         if hasText {
@@ -171,7 +175,7 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
             case .collapse(let inline):
                 makeWhitespaceCollapsingEvents(for: text, inline)
             default:
-                [.event(.text(text))]
+                [.event(.text(text), behavior ?? .collapse(inline: false))]
             }
         }
 
@@ -190,7 +194,7 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
                 if substring.first!.isWhitespace {
                     if substring.count > 1 || index == 0 || index + 1 == chunks.count {
                         if buffer.isEmpty == false {
-                            events.append(.event(.text(buffer)))
+                            events.append(.event(.text(buffer), .collapse(inline: inline)))
                             buffer.removeAll(keepingCapacity: true)
                         }
 
@@ -202,7 +206,7 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
                     buffer.append(String(substring))
 
                     if index + 1 == chunks.count {
-                        events.append(.event(.text(buffer)))
+                        events.append(.event(.text(buffer), .collapse(inline: inline)))
                     }
                 }
             }

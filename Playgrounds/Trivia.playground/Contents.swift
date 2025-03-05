@@ -120,7 +120,7 @@ Task {
             }
         }).compactMap { (event: WhitespaceParsingEvent<Element>) -> ParsingEvent<Element>? in
             return switch event {
-            case .event(let event):
+            case .event(let event, _):
                 event
             case .whitespace(_, _):
                 nil

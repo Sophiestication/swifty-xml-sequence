@@ -69,7 +69,7 @@ struct WhitespaceCollapseTest {
                         c
                     }
                 })
-            case .event(let event):
+            case .event(let event, _):
                 switch event {
                 case .text(let string):
                     partialResult.append(string)
