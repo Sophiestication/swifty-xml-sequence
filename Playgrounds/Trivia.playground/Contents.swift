@@ -114,7 +114,7 @@ Task {
         let attributedString = try await events.map(whitespace: { element, attributes in
             return switch element {
             case .trivia, .custom(_):
-                .collapse(inline: false)
+                .block
             default:
                 .preserve
             }

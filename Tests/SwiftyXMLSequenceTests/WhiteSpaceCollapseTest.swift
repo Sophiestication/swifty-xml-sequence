@@ -54,17 +54,19 @@ struct WhitespaceCollapseTest {
         let text = try await events.map(whitespace: { element, attributes in
             return switch element {
             case .strong, .span:
-                .collapse(inline: true)
+                .inline
             default:
-                .collapse(inline: false)
+                .block
             }
         }).reduce(into: String()) { partialResult, event in
             switch event {
             case .whitespace(let string, let behavior):
                 partialResult.append(contentsOf: string.map { c in
                     return switch behavior {
-                    case .collapse(let inline):
-                        charactor(for: c, inline)
+                    case .inline:
+                        charactor(for: c, true)
+                    case .block:
+                        charactor(for: c, false)
                     default:
                         c
                     }
