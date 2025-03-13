@@ -14,20 +14,23 @@ let package = Package(
             targets: ["SwiftyXMLSequence"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-algorithms.git", from: "1.2.0")
+        .package(url: "https://github.com/apple/swift-algorithms.git", from: "1.2.0"),
+        .package(url: "https://github.com/apple/swift-async-algorithms.git", from: "1.0.0")
     ],
     targets: [
         .target(
             name: "SwiftyXMLSequence",
             dependencies: [
-                .product(name: "Algorithms", package: "swift-algorithms")
+                .product(name: "Algorithms", package: "swift-algorithms"),
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms")
             ]
         ),
         .testTarget(
             name: "SwiftyXMLSequenceTests",
             dependencies: [
                 "SwiftyXMLSequence",
-                .product(name: "Algorithms", package: "swift-algorithms")
+                .product(name: "Algorithms", package: "swift-algorithms"),
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms") 
             ],
             resources: [
                 .copy("trivia.xml"),
