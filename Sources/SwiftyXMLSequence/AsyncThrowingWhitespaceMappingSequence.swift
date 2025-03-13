@@ -23,6 +23,7 @@
 
 import Foundation
 import Algorithms
+import AsyncAlgorithms
 
 public enum WhitespacePolicy: Equatable, Sendable {
     case inline
@@ -236,20 +237,6 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
             return newPrepared
         }
 
-        private func isTextEvent(_ whitespaceEvent: Element) -> Bool {
-            switch whitespaceEvent {
-            case .event(let event, _):
-                switch event {
-                case .text(_):
-                    return true
-                default:
-                    return false
-                }
-            default:
-                return false
-            }
-        }
-
         private mutating func nextPrepared() throws -> Element? {
             if prepared.isEmpty {
                 return nil
@@ -364,5 +351,21 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
 
             return index
         }
+    }
+}
+
+fileprivate func isTextEvent<T>(_ whitespaceEvent: WhitespaceParsingEvent<T>) -> Bool
+    where T: ElementRepresentable
+{
+    switch whitespaceEvent {
+    case .event(let event, _):
+        switch event {
+        case .text(_):
+            return true
+        default:
+            return false
+        }
+    default:
+        return false
     }
 }

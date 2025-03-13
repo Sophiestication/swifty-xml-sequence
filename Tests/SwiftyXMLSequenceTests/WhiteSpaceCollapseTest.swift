@@ -60,10 +60,10 @@ struct WhitespaceCollapseTest {
             }
         }).reduce(into: String()) { partialResult, event in
             switch event {
-            case .whitespace(_, let processing):
-                if processing == .collapse {
-                    partialResult.append(" ")
-                }
+            case .whitespace(let string, let processing):
+                partialResult.append(contentsOf: string.map {
+                    character(for: $0, processing)
+                })
             case .event(let event, _):
                 switch event {
                 case .text(let string):
@@ -75,8 +75,56 @@ struct WhitespaceCollapseTest {
             }
         }
 
+        let expectedText = "₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋Art····Deco₋₋₋₋Art Deco got its name after the₋₋₋₋₋₋1925₋₋₋₋₋₋Exposition₋ internationale₋₋₋₋₋₋ des arts décoratifs et industriels modernes···········(International Exhibition of Modern Decorative and Industrial Arts) held in Paris. Art Deco has its origins in bold geometric forms of the Vienna Secession and Cubism.₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋·········From its outset, it was influenced····by the bright colors of Fauvism and of the Ballets······Russes, and the exoticized styles of art from···············China, Japan, India, Persia, ancient Egypt, and Maya.₋₋₋₋₋₋₋₋"
+
+        #expect(text == expectedText)
+    }
+
+    @Test func testWhitespaceCollapsing() async throws {
+        typealias Event = ParsingEvent<HTMLElement>
+        typealias WhitespaceEvent = WhitespaceParsingEvent<HTMLElement>
+
+        let events = try await makeEvents(HTMLElement.self, for: "whitespace-collapse")
+
+        let text = try await events.collect { element, _ in
+            return switch element {
+            case .body:
+                true
+            default:
+                false
+            }
+        }.map(whitespace: { element, _ in
+            return switch element {
+            case .strong, .span:
+                .inline
+            default:
+                .block
+            }
+        })
+        .collapse()
+        .reduce(into: String()) { partialResult, event in
+            switch event {
+            case .text(let string):
+                partialResult.append(string)
+                break
+            default:
+                break
+            }
+        }
+
         let expectedText = "Art DecoArt Deco got its name after the1925Exposition internationale des arts décoratifs et industriels modernes (International Exhibition of Modern Decorative and Industrial Arts) held in Paris. Art Deco has its origins in bold geometric forms of the Vienna Secession and Cubism. From its outset, it was influenced by the bright colors of Fauvism and of the Ballets Russes, and the exoticized styles of art from China, Japan, India, Persia, ancient Egypt, and Maya."
 
         #expect(text == expectedText)
+    }
+
+    private func character(
+        for c: Character,
+        _ processing: WhitespaceProcessing
+    ) -> Character {
+        if processing == .collapse {
+            "·"
+        } else {
+            "₋"
+        }
     }
 }
