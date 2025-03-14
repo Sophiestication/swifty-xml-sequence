@@ -25,24 +25,6 @@ import Foundation
 import Algorithms
 import AsyncAlgorithms
 
-public enum WhitespacePolicy: Equatable, Sendable {
-    case inline
-    case block
-    case preserve
-}
-
-public enum WhitespaceProcessing: Equatable, Sendable {
-    case collapse
-    case remove
-}
-
-public enum WhitespaceParsingEvent<Element>: Equatable, Sendable
-    where Element: ElementRepresentable
-{
-    case event(ParsingEvent<Element>, WhitespacePolicy)
-    case whitespace(String, WhitespaceProcessing)
-}
-
 extension AsyncSequence {
     public func map<T: ElementRepresentable>(
         whitespace policy: @Sendable @escaping (
