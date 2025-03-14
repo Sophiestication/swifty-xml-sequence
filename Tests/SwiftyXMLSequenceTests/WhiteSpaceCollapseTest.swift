@@ -88,10 +88,8 @@ struct WhitespaceCollapseTest {
             default:
                 false
             }
-        }.map(whitespace: { element, _ in
-            element.whitespacePolicy
-        })
-        .collapse()
+        }
+        .collapseWhitespace()
         .reduce(into: String()) { partialResult, event in
             switch event {
             case .text(let string):

@@ -30,6 +30,19 @@ extension AsyncSequence {
     {
         AsyncThrowingWhitespaceCollapsingSequence(base: self)
     }
+
+    public func collapseWhitespace<T: ElementRepresentable & WhitespaceCollapsing>(
+    ) async rethrows ->
+        AsyncThrowingWhitespaceCollapsingSequence<
+            AsyncThrowingWhitespaceMappingSequence<Self, T>, T
+        >
+        where Element == ParsingEvent<T>
+    {
+        try await self.map(whitespace: { element, attributes in
+            element.whitespacePolicy
+        })
+        .collapse()
+    }
 }
 
 public struct AsyncThrowingWhitespaceCollapsingSequence<Base, T>: AsyncSequence, Sendable
