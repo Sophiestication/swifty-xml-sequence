@@ -29,6 +29,10 @@ public enum WhitespacePolicy: Equatable, Sendable {
     case preserve
 }
 
+public protocol WhitespaceCollapsing {
+    var whitespacePolicy: WhitespacePolicy { get }
+}
+
 public enum WhitespaceProcessing: Equatable, Sendable {
     case collapse
     case remove

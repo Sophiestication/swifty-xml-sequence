@@ -176,3 +176,22 @@ public enum HTMLElement: ElementRepresentable {
         self = HTMLElement.stringToElement[key] ?? .custom(element)
     }
 }
+
+extension HTMLElement: WhitespaceCollapsing {
+    public var whitespacePolicy: WhitespacePolicy {
+        return switch self {
+        case .br, .wbr, .span, .a, .b, .i, .u, .strong, .small, .mark,
+             .abbr, .cite, .q, .code, .sup, .sub, .time, .kbd, .samp, .var,
+             .ruby, .rt, .rp, .bdi, .bdo, .img, .button, .label,
+             .input, .select, .option, .optgroup,
+             .output, .progress, .meter, .details, .summary:
+            .inline
+
+        case .pre, .textarea:
+            .preserve
+
+        default:
+            .block
+        }
+    }
+}

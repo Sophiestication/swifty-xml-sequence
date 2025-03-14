@@ -52,12 +52,7 @@ struct WhitespaceCollapseTest {
         let events = try await makeEvents(HTMLElement.self, for: "whitespace-collapse")
 
         let text = try await events.map(whitespace: { element, attributes in
-            return switch element {
-            case .strong, .span:
-                .inline
-            default:
-                .block
-            }
+            element.whitespacePolicy
         }).reduce(into: String()) { partialResult, event in
             switch event {
             case .whitespace(let string, let processing):
@@ -94,12 +89,7 @@ struct WhitespaceCollapseTest {
                 false
             }
         }.map(whitespace: { element, _ in
-            return switch element {
-            case .strong, .span:
-                .inline
-            default:
-                .block
-            }
+            element.whitespacePolicy
         })
         .collapse()
         .reduce(into: String()) { partialResult, event in
