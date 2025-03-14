@@ -216,13 +216,17 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
                 case .event(let event, let policy):
                     switch event {
                     case .text(let string):
-                        newPrepared.append(contentsOf:
-                            makeWhitespaceCollapsingEvents(
-                                for: string,
-                                index == 0 ? .block : policy,
-                                following: prepared.suffix(from: index).dropFirst()
+                        if policy == .preserve {
+                            newPrepared.append(whitespaceEvent)
+                        } else {
+                            newPrepared.append(contentsOf:
+                                makeWhitespaceCollapsingEvents(
+                                    for: string,
+                                    index == 0 ? .block : policy,
+                                    following: prepared.suffix(from: index).dropFirst()
+                                )
                             )
-                        )
+                        }
                         break
                     default:
                         newPrepared.append(whitespaceEvent)

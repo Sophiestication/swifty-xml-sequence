@@ -117,6 +117,38 @@ struct WhitespaceCollapseTest {
         #expect(text == expectedText)
     }
 
+    @Test func testWhitespacePreserving() async throws {
+        typealias Event = ParsingEvent<HTMLElement>
+        typealias WhitespaceEvent = WhitespaceParsingEvent<HTMLElement>
+
+        let events = try await makeEvents(HTMLElement.self, for: "whitespace-collapse")
+
+        let text = try await events.collect { element, _ in
+            return switch element {
+            case .h1:
+                true
+            default:
+                false
+            }
+        }.map(whitespace: { element, _ in
+            .preserve
+        })
+        .collapse()
+        .reduce(into: String()) { partialResult, event in
+            switch event {
+            case .text(let string):
+                partialResult.append(string)
+                break
+            default:
+                break
+            }
+        }
+
+        let expectedText = " Art    Deco    "
+
+        #expect(text == expectedText)
+    }
+
     private func character(
         for c: Character,
         _ processing: WhitespaceProcessing
