@@ -375,36 +375,5 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
 
             return element.1
         }
-
-        private func debugDescription(for collected: [Element]) -> String {
-            collected.reduce(String()) { partialResult, event in
-                switch event {
-                case .event(let event, let policy):
-                    switch event {
-                    case .begin(_, _):
-                        return partialResult + "[\(policy) "
-                    case .end(_):
-                        return partialResult + "\(policy)] "
-                    case .text(let string):
-                        return partialResult + "[\(string)] "
-                    default:
-                        break
-                    }
-                case .whitespace(let whitespace, let processing):
-                    return partialResult + "[\(debugDescription(for: processing)):\(whitespace)] "
-                }
-
-                return partialResult
-            }
-        }
-
-        private func debugDescription(for processing: WhitespaceProcessing) -> String {
-            return switch processing {
-            case .collapse:
-                "collapse"
-            case .remove:
-                "remove"
-            }
-        }
     }
 }
