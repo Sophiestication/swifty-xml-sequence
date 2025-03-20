@@ -36,7 +36,8 @@ let package = Package(
                 .copy("trivia.xml"),
                 .copy("sample1.html"),
                 .copy("sample2.html"),
-                .copy("whitespace-collapse.html")
+                .copy("whitespace-collapse.html"),
+                .copy("whitespace-collapse-cases.html")
             ]
         ),
     ]

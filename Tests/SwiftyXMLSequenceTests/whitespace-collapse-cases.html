@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        .case {
+            margin: 2em 0;
+        }
+
+        .case::before {
+            content: attr(id);
+            font-family: monospace;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="case" id="test-multiple-spaces" expect="Hello world!"><p>Hello      world!</p></div>
+    <div class="case" id="test-leading-trailing" expect="Hello world!"><div>   Hello world!   </div></div>
+    <div class="case" id="test-newline-tabs" expect="Hello world!"><p>Hello
+        world!</p></div>
+
+    <div class="case" id="test-before-block" expect="HelloWorld"><span>Hello</span>   <div>World</div></div>
+    <div class="case" id="test-after-block" expect="HelloWorld"><div>Hello</div>   <span>World</span></div>
+
+    <div class="case" id="test-inline-space" expect="Hello World"><span>Hello</span>   <span>World</span></div>
+    <div class="case" id="test-inline-start" expect="Hello World">Hello<strong>   World</strong></div>
+    <div class="case" id="test-inline-follow" expect="Hello World">Hello <strong>World</strong></div>
+
+    <div class="case" id="test-before-leading-inline" expect="Hello World">Hello <strong> World</strong></div>
+    <div class="case" id="test-before-leading-block" expect="HelloWorld">Hello <div> World</div></div>
+
+    <div class="case" id="test-br" expect="HelloWorld">Hello<br />World</div>
+
+    <div class="case" id="test-pre" expect="   Hello   World  "><pre>   Hello   World  </pre></div>
+    <div class="case" id="test-inline-start-pre" expect="Hello   World"><pre>Hello<strong>   World</strong></pre></div>
+
+</body>
+</html>

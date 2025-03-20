@@ -70,7 +70,7 @@ struct WhitespaceCollapseTest {
             }
         }
 
-        let expectedText = "₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋Art····Deco₋₋₋₋Art Deco got its name after the₋₋₋₋₋₋1925₋₋₋₋₋₋Exposition₋ internationale₋₋₋₋₋₋ des arts décoratifs et industriels modernes···········(International Exhibition of Modern Decorative and Industrial Arts) held in Paris. Art Deco has its origins in bold geometric forms of the Vienna Secession and Cubism.₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋·········From its outset, it was influenced····by the bright colors of Fauvism and of the Ballets······Russes, and the exoticized styles of art from···············China, Japan, India, Persia, ancient Egypt, and Maya.₋₋₋₋₋₋₋₋"
+        let expectedText = "₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋Art····Deco₋₋₋₋Art Deco got its name after the₋₋₋₋₋₋1925₋₋₋₋₋₋Exposition₋·internationale₋₋₋₋₋₋·des arts décoratifs et industriels modernes···········(International Exhibition of Modern Decorative and Industrial Arts) held in Paris. Art Deco has its origins in bold geometric forms of the Vienna Secession and Cubism.₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋₋·········From its outset, it was influenced····by the bright colors of Fauvism and of the Ballets······Russes, and the exoticized styles of art from···············China, Japan, India, Persia, ancient Egypt, and Maya.₋₋₋₋₋₋₋₋"
 
         #expect(text == expectedText)
     }
@@ -146,5 +146,149 @@ struct WhitespaceCollapseTest {
         } else {
             "₋"
         }
+    }
+
+    enum WhitespaceCollapseCase: ElementRepresentable, WhitespaceCollapsing {
+        case `case`(id: String, expect: String)
+        case html(HTMLElement)
+
+        init(element: String, attributes: Attributes) {
+            if attributes.contains(class: "case") {
+                self = .case(id: attributes["id"]!, expect: attributes["expect"]!)
+            } else {
+                self = .html(HTMLElement(element: element, attributes: attributes))
+            }
+        }
+
+        var whitespacePolicy: WhitespacePolicy {
+            return switch self {
+            case .html(let element): element.whitespacePolicy
+            default: .block
+            }
+        }
+    }
+
+    struct WhitespaceCollapseResult: Identifiable {
+        var id: String
+        var expect: String
+        var text: String
+    }
+
+    @Test func testWhitespaceCollapseCases() async throws {
+        let results = try await makeEvents(
+            WhitespaceCollapseCase.self,
+            for: "whitespace-collapse-cases"
+        )
+        .collect { element, attributes in
+            return switch element {
+            case .case(_, _): true
+            default: false
+            }
+        }
+        .collapseWhitespace()
+        .reduce(into: [WhitespaceCollapseResult]()) { partialResult, event in
+            switch event {
+            case .begin(let element, _):
+                switch element {
+                case .case(let id, let expect):
+                    partialResult.append(
+                        WhitespaceCollapseResult(id: id, expect: expect, text: String())
+                    )
+                default:
+                    break
+                }
+                break
+
+            case .text(let string):
+                var result = partialResult.removeLast()
+                result.text.append(string)
+                partialResult.append(result)
+
+                break
+
+            default:
+                break
+            }
+        }
+
+        for result in results {
+            #expect(result.expect == result.text, "Test Case \(result.id)")
+        }
+    }
+
+    @Test func testMultipleSpacesWhitespaceCollapse() async throws {
+        try await testWhitespaceCollapseCase(
+            named: "test-multiple-spaces",
+            result: "Hello world!"
+        )
+    }
+
+    @Test func testLeadingTrailingWhitespaceCollapse() async throws {
+        try await testWhitespaceCollapseCase(
+            named: "test-leading-trailing",
+            result: "Hello world!"
+        )
+    }
+
+    @Test func testAfterBlockWhitespaceCollapse() async throws {
+        try await testWhitespaceCollapseCase(
+            named: "test-after-block",
+            result: "HelloWorld"
+        )
+    }
+
+    @Test func testInlineFollowWhitespaceCollapse() async throws {
+        try await testWhitespaceCollapseCase(
+            named: "test-inline-follow",
+            result: "Hello World"
+        )
+    }
+
+    @Test func testInlineStartWhitespaceCollapse() async throws {
+        try await testWhitespaceCollapseCase(
+            named: "test-inline-start",
+            result: "Hello World"
+        )
+    }
+
+    @Test func testInlineSpaceWhitespaceCollapse() async throws {
+        try await testWhitespaceCollapseCase(
+            named: "test-inline-space",
+            result: "Hello World"
+        )
+    }
+
+    @Test func testBeforeLeadingInlineWhitespaceCollapse() async throws {
+        try await testWhitespaceCollapseCase(
+            named: "test-before-leading-inline",
+            result: "Hello World"
+        )
+    }
+
+    private func testWhitespaceCollapseCase(named: String, result: String) async throws {
+        let string = try await makeEvents(
+            WhitespaceCollapseCase.self,
+            for: "whitespace-collapse-cases"
+        )
+        .collect { element, attributes in
+            guard let id = attributes["id"] else { return false }
+            return id == named
+        }
+        .map(whitespace: { element, attributes in
+            element.whitespacePolicy
+        })
+        .collapse()
+        .reduce(String()) { partialResult, event in
+            switch event {
+            case .text(let string):
+                return partialResult + string
+            default:
+                break
+            }
+
+            return partialResult
+        }
+
+        #expect(string == result)
     }
 }
