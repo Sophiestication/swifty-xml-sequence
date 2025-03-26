@@ -28,7 +28,7 @@ public struct ParsingEventDebugFormatter: Sendable {
               S.Element == WhitespaceParsingEvent<E>,
               E: ElementRepresentable
     {
-        let array = try await Array(sequence.map { "\(format($0))" })
+        let array = try await Array(sequence.compactMap { format($0) })
         return array.joined(separator: " ")
     }
 
@@ -37,7 +37,7 @@ public struct ParsingEventDebugFormatter: Sendable {
               S.Element == ParsingEvent<E>,
               E: ElementRepresentable
     {
-        let array = try await Array(sequence.map { "\(format($0))" })
+        let array = try await Array(sequence.compactMap { format($0) })
         return array.joined(separator: " ")
     }
 
@@ -46,7 +46,7 @@ public struct ParsingEventDebugFormatter: Sendable {
               S.Element == WhitespaceParsingEvent<E>,
               E: ElementRepresentable
     {
-        sequence.map { "\(format($0))" }.joined(separator: " ")
+        sequence.compactMap { format($0) }.joined(separator: " ")
     }
 
     func format<E, S>(_ sequence: S) -> String
@@ -54,10 +54,10 @@ public struct ParsingEventDebugFormatter: Sendable {
               S.Element == ParsingEvent<E>,
               E: ElementRepresentable
     {
-        sequence.map { "\(format($0))" }.joined(separator: " ")
+        sequence.compactMap { format($0) }.joined(separator: " ")
     }
 
-    func format<E>(_ event: WhitespaceParsingEvent<E>) -> String
+    func format<E>(_ event: WhitespaceParsingEvent<E>) -> String?
         where E: ElementRepresentable
     {
         switch event {
@@ -72,14 +72,14 @@ public struct ParsingEventDebugFormatter: Sendable {
             case .text(let string):
                 "[\(string)]"
             default:
-                String()
+                nil
             }
         }
     }
 
     func format<E>(
         _ event: ParsingEvent<E>
-    ) -> String
+    ) -> String?
         where E: ElementRepresentable
     {
         return switch event {
@@ -90,7 +90,7 @@ public struct ParsingEventDebugFormatter: Sendable {
         case .text(let string):
             "[\(string)]"
         default:
-            String()
+            nil
         }
     }
 
@@ -111,6 +111,8 @@ public struct ParsingEventDebugFormatter: Sendable {
             "collapse"
         case .remove:
             "remove"
+        case .linebreak:
+            "linebreak"
         }
     }
 

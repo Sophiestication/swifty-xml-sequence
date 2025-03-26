@@ -21,17 +21,20 @@
     <div class="case" id="test-newline-tabs" expect="Hello world!"><p>Hello
         world!</p></div>
 
-    <div class="case" id="test-before-block" expect="HelloWorld"><span>Hello</span>   <div>World</div></div>
-    <div class="case" id="test-after-block" expect="HelloWorld"><div>Hello</div>   <span>World</span></div>
+    <div class="case" id="test-before-block" expect="Hello\nWorld"><span>Hello</span>   <div>World</div></div>
+    <div class="case" id="test-after-block" expect="Hello\nWorld"><div>Hello</div>   <span>World</span></div>
 
     <div class="case" id="test-inline-space" expect="Hello World"><span>Hello</span>   <span>World</span></div>
     <div class="case" id="test-inline-start" expect="Hello World">Hello<strong>   World</strong></div>
     <div class="case" id="test-inline-follow" expect="Hello World">Hello <strong>World</strong></div>
 
     <div class="case" id="test-before-leading-inline" expect="Hello World">Hello <strong> World</strong></div>
-    <div class="case" id="test-before-leading-block" expect="HelloWorld">Hello <div> World</div></div>
+    <div class="case" id="test-before-leading-block" expect="Hello\nWorld">Hello <div> World</div></div>
 
-    <div class="case" id="test-br" expect="HelloWorld">Hello<br />World</div>
+    <div class="case" id="test-between-inline" expect="Hello World">Hello <strong> <i>  </i> World</strong></div>
+    <div class="case" id="test-between-block" expect="HelloWorld">Hello <strong> <div>	 	 </div> World</strong></div>
+
+    <div class="case" id="test-br" expect="Hello\nWorld">Hello<br />World</div>
 
     <div class="case" id="test-pre" expect="   Hello   World  "><pre>   Hello   World  </pre></div>
     <div class="case" id="test-inline-start-pre" expect="Hello   World"><pre>Hello<strong>   World</strong></pre></div>

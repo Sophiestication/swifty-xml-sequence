@@ -25,7 +25,7 @@ import Foundation
 import Algorithms
 import AsyncAlgorithms
 
-extension AsyncSequence {
+extension AsyncSequence where Self: Sendable {
     public func map<T: ElementRepresentable>(
         whitespace policy: @Sendable @escaping (
             _ element: T,
@@ -34,7 +34,7 @@ extension AsyncSequence {
     ) async rethrows -> AsyncThrowingWhitespaceMappingSequence<Self, T>
         where Element == ParsingEvent<T>
     {
-        return AsyncThrowingWhitespaceMappingSequence(base: self, policy)
+        return try await AsyncThrowingWhitespaceMappingSequence(base: self, policy: policy)
     }
 }
 
@@ -44,55 +44,88 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
 {
-    private let base: Base
+    fileprivate typealias PrivateBase = AsyncThrowingMapElementSequence<
+            AsyncThrowingFlatMapSequence<
+                AsyncChunkedByGroupSequence<Base, [Base.Element]
+            >, AsyncSyncSequence<[Base.Element]>
+        >, T, WhitespaceParsingEvent<T>
+    > // ☠️
+    private var base: PrivateBase
 
     internal typealias Policy = @Sendable (
         _ element: T,
         _ attributes: Attributes
     ) -> WhitespacePolicy
 
-    private let policy: Policy
-
-    internal init(base: Base, _ policy: @escaping Policy) {
-        self.base = base
-        self.policy = policy
+    internal init(base: Base, policy: @escaping Policy) async throws {
+        self.base = try await base
+            .joinAdjacentText()
+            .map { (context, event) -> WhitespaceParsingEvent<T> in
+                return switch event {
+                case .begin(let element, let attributes):
+                    .event(event, policy(element, attributes))
+                default:
+                    .event(event, Self.policy(for: context))
+                }
+            }
     }
 
+    public typealias Element = WhitespaceParsingEvent<T>
+
     public func makeAsyncIterator() -> Iterator {
-        return Iterator(base.makeAsyncIterator(), policy)
+        return Iterator(base.makeAsyncIterator())
     }
 
     public struct Iterator: AsyncIteratorProtocol {
         public typealias Element = WhitespaceParsingEvent<T>
 
-        private var base: Base.AsyncIterator
-        private let policy: Policy
-
+        private var base: PrivateBase.AsyncIterator
         private var prepared: [Element] = []
 
-        private var previous: [Element] = []
-        private var next: [Element]? = nil
+        private typealias WhitespaceSegment = WhitespaceSegmentSequence.Element
 
-        private var elementStack: [(T, WhitespacePolicy)] = []
+        private struct CollectedText {
+            var preceding: [Element]
+            var policy: WhitespacePolicy
+            var segments: [WhitespaceSegment]
 
-        internal init(_ base: Base.AsyncIterator, _ policy: @escaping Policy) {
+            var hasOnlyWhitespace: Bool {
+                if segments.isEmpty {
+                    return false
+                }
+
+                return segments.contains {
+                    return switch $0 {
+                    case .text(_):
+                        false
+                    default:
+                        true
+                    }
+                } == false
+            }
+
+            var hasText: Bool {
+                return segments.contains {
+                    return switch $0 {
+                    case .text(_):
+                        true
+                    default:
+                        false
+                    }
+                }
+            }
+        }
+
+        fileprivate init(_ base: PrivateBase.AsyncIterator) {
             self.base = base
-            self.policy = policy
         }
 
         public mutating func next() async throws -> Element? {
             if prepared.isEmpty {
-                if next == nil {
-                    next = try await collect()
-                }
+                try await prepare()
 
-                let events = next!
-
-                let collected = try await collect()
-                next = collected
-
-                prepared = prepare(events, previous: previous, next: collected)
-                previous = prepared
+                let formatter = ParsingEventDebugFormatter()
+                print(": \(formatter.format(prepared))")
             }
 
             if prepared.isEmpty {
@@ -102,278 +135,327 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
             return prepared.removeFirst()
         }
 
-        private mutating func collect() async throws -> [Element] {
-            var collected: [Element] = []
+        private mutating func prepare() async throws {
+            var collected = try await collect()
 
-            var text = String()
-            var textWhitespacePolicy: WhitespacePolicy = .block
+            if collected.isEmpty == false {
+                collected += try await collect()
+            }
 
-            while true {
-                guard let event = try await base.next() else {
-                    return collected
+            if collected.isEmpty {
+                return
+            }
+
+            prepare(collected)
+        }
+
+        private mutating func prepare(
+            _ collected: [CollectedText]
+        ) {
+            var foundCollapsableWhitespaceAtEnd = false
+            var lastTextOrBeginIndex: Int = 0
+
+            for (currentIndex, current)in collected.enumerated() {
+                yield(current.preceding)
+
+                for (segmentIndex, segment) in current.segments.enumerated() {
+                    let isAtStart = segmentIndex == current.segments.startIndex
+                    let isAtEnd = segmentIndex + 1 == current.segments.endIndex
+
+                    switch segment {
+                    case .text(let text):
+                        yield(.event(.text(String(text)), current.policy))
+                        lastTextOrBeginIndex = currentIndex
+                        break
+
+                    case .whitespace(let whitespace, _):
+                        var processing: WhitespaceProcessing = .remove
+                        let next = collected.suffix(from: currentIndex + 1)
+
+                        if isAtEnd,
+                           foundCollapsableWhitespaceAtEnd == false,
+                           current.hasText,
+                           has(next, only: .inline)
+                        {
+                            foundCollapsableWhitespaceAtEnd = true
+                            processing = .collapse
+                        } else if isAtStart,
+                                  isAtEnd,
+                                  foundCollapsableWhitespaceAtEnd == false
+                        {
+                            let afterLastText = collected
+                                .suffix(from: lastTextOrBeginIndex + 1)
+                                .prefix(upTo: currentIndex + 1)
+
+                            if has(afterLastText, only: .inline) {
+                                processing = .collapse
+                            }
+                        } else if isAtStart == false,
+                                  isAtEnd == false,
+                                  foundCollapsableWhitespaceAtEnd == false
+                        {
+                            processing = .collapse
+                        } else if foundCollapsableWhitespaceAtEnd == false,
+                                  isAtStart,
+                                  isAtEnd == false
+                        {
+                            let afterLastText = collected
+                                .suffix(from: lastTextOrBeginIndex + 1)
+                                .prefix(upTo: currentIndex + 1)
+
+                            if has(afterLastText, only: .inline) {
+                                processing = .collapse
+                            }
+                        }
+
+                        yield(.whitespace(String(whitespace), processing))
+
+                        break
+                    }
                 }
+            }
+        }
 
-                switch event {
-                case .begin(let element, let attributes):
-                    let whitespacePolicy = push(element, attributes)
+        private mutating func collect() async throws -> [CollectedText] {
+            var collected: [CollectedText] = []
+            var events: [Element] = []
 
-                    if text.isEmpty == false {
-                        collected += events(for: text, textWhitespacePolicy)
-                        collected.append(.event(event, whitespacePolicy))
+            var foundText = false
 
-                        if whitespacePolicy != .inline {
-                            return collected
-                        }
+            while let whitespaceEvent = try await base.next() {
+                switch whitespaceEvent {
+                case .event(let event, let policy):
+                    switch event {
+                    case .text(let text):
+                        let collectedText = CollectedText(
+                            preceding: events,
+                            policy: policy,
+                            segments: whitespaceSegments(for: text, policy)
+                        )
+                        collected.append(collectedText)
 
-                        text.removeAll(keepingCapacity: true)
-                    } else {
-                        collected.append(.event(event, whitespacePolicy))
+                        foundText = collectedText.hasText
+                        events.removeAll(keepingCapacity: true)
+
+                    default:
+                        events.append(whitespaceEvent)
                     }
-
-                    break
-
-                case .end(let element):
-                    let whitespacePolicy = pop(element)
-
-                    if text.isEmpty == false {
-                        collected += events(for: text, textWhitespacePolicy)
-                        collected.append(.event(event, whitespacePolicy))
-
-                        if whitespacePolicy != .inline {
-                            return collected
-                        }
-
-                        text.removeAll(keepingCapacity: true)
-                    } else {
-                        collected.append(.event(event, whitespacePolicy))
-                    }
-
-                    break
-
-                case .text(let string):
-                    textWhitespacePolicy = currentWhitespacePolicy
-                    text += string
-
                     break
 
                 default:
+                    events.append(whitespaceEvent)
+                    break
+                }
+
+                if foundText {
                     break
                 }
             }
+
+            if events.isEmpty == false {
+                let collectedText = CollectedText(
+                    preceding: events,
+                    policy: .preserve,
+                    segments: []
+                )
+                collected.append(collectedText)
+            }
+
+            return collected
         }
 
-        private func prepare(
-            _ events: [Element],
-            previous: [Element],
-            next: [Element]
-        ) -> [Element] {
-            let all = previous + events + next
-            var prepared = events
-
-            let filteredIndices = all.indices.filter { index in
-                let event = all[index]
-
-                if isTextEvent(event) {
-                    return true
-                }
-
-                if let policy = policy(for: event) {
-                    return policy != .inline
-                }
-
-                return true
+        private func whitespaceSegments(
+            for text: String,
+            _ policy: WhitespacePolicy
+        ) -> [WhitespaceSegment] {
+            if policy == .preserve {
+                return [.text(text[...])] // TODO
             }
 
-            for (filteredIndex, eventIndex) in filteredIndices.enumerated() {
-                if eventIndex < previous.count || eventIndex >= (previous.count + events.count) {
-                    continue
-                }
-
-                let event = all[eventIndex]
-
-                if isWhitespaceEvent(event) == false {
-                    continue
-                }
-
-                var previousEvent: Element? = nil
-                let previousFilteredIndex = filteredIndices.index(before: filteredIndex)
-
-                if previousFilteredIndex >= 0 {
-                    previousEvent = all[filteredIndices[previousFilteredIndex]]
-                }
-
-                var previousIsBlock = false
-                var previousIsWhitespace = false
-                var previousIsText = false
-
-                if let previousEvent {
-                    previousIsWhitespace = isWhitespaceEvent(previousEvent)
-                    previousIsBlock = policy(for: previousEvent) != .inline
-                    previousIsText = isTextEvent(previousEvent)
-                }
-
-                var followingEvent: Element? = nil
-                let followingFilteredIndex = filteredIndices.index(after: filteredIndex)
-
-                if followingFilteredIndex < filteredIndices.count {
-                    followingEvent = all[filteredIndices[followingFilteredIndex]]
-                }
-
-                var followingIsBlock = false
-                var followingIsWhitespace = false
-                var followingIsText = false
-
-                if let followingEvent {
-                    followingIsWhitespace = isWhitespaceEvent(followingEvent)
-                    followingIsBlock = policy(for: followingEvent) != .inline
-                    followingIsText = isTextEvent(followingEvent)
-                }
-
-                var newProcessing: WhitespaceProcessing? = nil
-
-                if previousIsText, followingIsText {
-                    // newProcessing = .collapse
-                } else if previousIsBlock, followingIsBlock {
-                    newProcessing = .remove
-                } else if (previousIsText || previousIsWhitespace), followingIsText {
-                    // newProcessing = .collapse
-                } else if (previousIsText || previousIsWhitespace), followingIsWhitespace {
-                    newProcessing = .remove
-                } else if previousIsText, followingIsBlock {
-                    newProcessing = .remove
-                } else if previousIsText == false,
-                   previousIsBlock || followingIsText || followingIsWhitespace {
-                    newProcessing = .remove
-                }
-
-                if let newProcessing {
-                    let preparedIndex = eventIndex - previous.count
-
-                    let newEvent: Element = .whitespace(
-                        whitespace(from: event),
-                        newProcessing
-                    )
-                    prepared[preparedIndex] = newEvent
-                }
-            }
-
-            return prepared
+            return [WhitespaceSegment](text.whitespaceSegments)
         }
 
-        private func policy(for event: Element?) -> WhitespacePolicy? {
-            guard let event else {
-                return nil
-            }
-
-            return switch event {
-            case .event(_, let policy):
-                policy
-            default:
-                nil
-            }
-        }
-
-        private func isTextEvent(_ whitespaceEvent: Element?) -> Bool {
-            guard let whitespaceEvent else {
+        private func hasText(_ collected: CollectedText?) -> Bool {
+            guard let collected else {
                 return false
             }
 
-            switch whitespaceEvent {
-            case .event(let event, _):
-                switch event {
+            return collected.segments.contains {
+                return switch $0 {
                 case .text(_):
-                    return true
+                    true
                 default:
-                    return false
+                    false
                 }
-            default:
-                return false
             }
         }
 
-        private func isWhitespaceEvent(_ event: Element) -> Bool {
-            return switch event {
-            case .whitespace(_, _):
+        private func startsWithText(_ collected: CollectedText?) -> Bool {
+            guard let collected else {
+                return false
+            }
+
+            guard let first = collected.segments.first else {
+                return false
+            }
+
+            return switch first {
+            case .text(_):
                 true
             default:
                 false
             }
         }
 
-        private func whitespace(from whitespaceEvent: Element) -> String {
-            return switch whitespaceEvent {
-            case .whitespace(let string, _):
-                string
+        private func endsWithText(_ collected: CollectedText?) -> Bool {
+            guard let collected else {
+                return false
+            }
+
+            guard let last = collected.segments.last else {
+                return false
+            }
+
+            return switch last {
+            case .text(_):
+                true
             default:
-                String()
+                false
             }
         }
 
-        private func events(
-            for text: String,
-            _ whitespacePolicy: WhitespacePolicy
-        ) -> [Element] {
-            if whitespacePolicy == .preserve {
-                return [.event(.text(text), whitespacePolicy)]
+        private func isBeginEvent(_ event: Element?) -> Bool {
+            guard let event else {
+                return false
             }
 
-            var events = [Element]()
-
-            let chunks = text.chunked { first, second in
-                first.isWhitespace == second.isWhitespace
+            switch event {
+            case .event(let event, _):
+                switch event {
+                case .begin(_, _),
+                     .beginDocument:
+                    return true
+                default:
+                    break
+                }
+            default:
+                break
             }
 
-            var buffer = String()
+            return false
+        }
 
-            for (index, substring) in chunks.enumerated() {
-                let isLeadingOrTrailing = index == 0 || index + 1 == chunks.count
-                let isWhitespace = substring.first!.isWhitespace
+        private func isEndEvent(_ event: Element?) -> Bool {
+            guard let event else {
+                return false
+            }
 
-                if isWhitespace, (isLeadingOrTrailing || substring.count > 1) {
-                    if buffer.isEmpty == false {
-                        events.append(.event(.text(buffer), whitespacePolicy))
-                        buffer.removeAll(keepingCapacity: true)
+            switch event {
+            case .event(let event, _):
+                switch event {
+                case .end(_):
+                    return true
+                default:
+                    break
+                }
+            default:
+                break
+            }
+
+            return false
+        }
+
+        private func hasLeadingWhitespace<S: Sequence>(
+            _ sequence: S
+        ) -> Bool
+            where S.Element == CollectedText
+        {
+            sequence.contains {
+                $0.segments.prefix(1).contains {
+                    return switch $0 {
+                    case .whitespace(_, _):
+                        true
+                    default:
+                        false
                     }
-
-                    // Processing will be adjusted in prepare()
-                    events.append(.whitespace(String(substring), .collapse))
-                } else {
-                    buffer += substring
                 }
             }
+        }
 
-            if buffer.isEmpty == false {
-                events.append(.event(.text(buffer), whitespacePolicy))
-                buffer.removeAll(keepingCapacity: true)
+        private func has<S: Sequence>(
+            _ sequence: S,
+            only whitespacePolicy: WhitespacePolicy
+        ) -> Bool
+            where S.Element == CollectedText
+        {
+            has(sequence.flatMap { $0.preceding }, only: whitespacePolicy)
+        }
+
+        private func has<S: Sequence>(
+            _ sequence: S?,
+            only whitespacePolicy: WhitespacePolicy
+        ) -> Bool
+            where S.Element == WhitespaceParsingEvent<T>
+        {
+            guard let sequence else {
+                return false
             }
 
-            return events
+            var foundElement = false
+
+            return sequence.first { whitespaceEvent in
+                foundElement = true
+
+                return switch whitespaceEvent {
+                case .event(_, let policy):
+                    policy != whitespacePolicy
+                default:
+                    false
+                }
+            } == nil && foundElement
         }
 
-        private mutating func push(_ element: T, _ attributes: Attributes) -> WhitespacePolicy {
-            var whitespacePolicy: WhitespacePolicy
-
-            if currentWhitespacePolicy == .preserve { // override if needed
-                whitespacePolicy = .preserve
-            } else {
-                whitespacePolicy = policy(element, attributes)
+        private func first<S: Sequence>(
+            matching whitespacePolicy: WhitespacePolicy,
+            in sequence: S?
+        ) -> Element?
+            where S.Element == WhitespaceParsingEvent<T>
+        {
+            guard let sequence else {
+                return nil
             }
 
-            elementStack.append((element, whitespacePolicy))
-            return whitespacePolicy
-        }
-
-        private mutating func pop(_ element: T) -> WhitespacePolicy {
-            let element = elementStack.removeLast()
-            return element.1
-        }
-
-        private var currentWhitespacePolicy: WhitespacePolicy {
-            guard let element = elementStack.last else {
-                return .block
+            return sequence.first {
+                return switch $0 {
+                case .event(_, let policy):
+                    whitespacePolicy == policy
+                default:
+                    false
+                }
             }
-
-            return element.1
         }
+
+        private mutating func yield(_ event: Element) {
+            prepared.append(event)
+        }
+
+        private mutating func yield(_ events: [Element]) {
+            prepared.append(contentsOf: events)
+        }
+    }
+
+    private static func policy(
+        for context: [ParsingEventMappingContext<T, Element>]
+    ) -> WhitespacePolicy {
+        if let last = context.last {
+            switch last.mappedResult {
+            case .event(_, let policy):
+                return policy
+            default:
+                break
+            }
+        }
+
+        return .block
     }
 }

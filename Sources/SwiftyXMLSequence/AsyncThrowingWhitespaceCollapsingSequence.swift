@@ -23,7 +23,7 @@
 
 import Foundation
 
-extension AsyncSequence {
+extension AsyncSequence  {
     public func collapse<T: ElementRepresentable>(
     ) async rethrows -> AsyncThrowingWhitespaceCollapsingSequence<Self, T>
         where Element == WhitespaceParsingEvent<T>
@@ -85,10 +85,18 @@ public struct AsyncThrowingWhitespaceCollapsingSequence<Base, T>: AsyncSequence,
                 }
 
                 switch whitespaceEvent {
-                case .whitespace(_, let processing):
-                    if processing == .collapse {
+                case .whitespace(let whitespace, let processing):
+                    switch processing {
+                    case .collapse:
                         textEvent = appending(" ", to: textEvent)
+                        break
+                    case .linebreak:
+                        textEvent = appending(whitespace, to: textEvent)
+                        break
+                    default:
+                        break
                     }
+
                     break
                 case .event(let event, _):
                     switch event {

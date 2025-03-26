@@ -1,3 +1,4 @@
+//
 // MIT License
 //
 // Copyright (c) 2025 Sophiestication Software, Inc.
@@ -21,27 +22,32 @@
 // SOFTWARE.
 //
 
-import Foundation
+import AsyncAlgorithms
 
-public enum WhitespacePolicy: Equatable, Sendable {
-    case inline
-    case block
-    case preserve
-}
+extension AsyncSequence {
+    public func joinAdjacentText<T: ElementRepresentable>(
+    ) async rethrows -> AsyncThrowingFlatMapSequence<
+        AsyncChunkedByGroupSequence<Self, [Element]>,
+        AsyncSyncSequence<[Element]>
+    >
+        where Element == ParsingEvent<T>
+    {
+        chunked {
+            if case .text(_) = $0, case .text(_) = $1 { return true }
+            return false
+        }
+        .flatMap { chunk in
+            if let first = chunk.first, case .text(_) = first {
+                let text = chunk.compactMap {
+                    if case .text(let string) = $0 { return string }
+                    return nil
+                }.joined()
 
-public protocol WhitespaceCollapsing {
-    var whitespacePolicy: WhitespacePolicy { get }
-}
+                let joinedEvent: Element = .text(text)
+                return [joinedEvent].async
+            }
 
-public enum WhitespaceProcessing: Equatable, Sendable {
-    case collapse
-    case remove
-    case linebreak
-}
-
-public enum WhitespaceParsingEvent<Element>: Equatable, Sendable
-    where Element: ElementRepresentable
-{
-    case event(ParsingEvent<Element>, WhitespacePolicy)
-    case whitespace(String, WhitespaceProcessing)
+            return chunk.async
+        }
+    }
 }
