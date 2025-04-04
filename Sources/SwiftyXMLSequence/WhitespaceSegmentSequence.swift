@@ -28,11 +28,21 @@ internal struct WhitespaceSegmentSequence: Sequence {
         case start
         case between
         case end
+        case single
     }
 
-    enum Element: Equatable {
+    enum Element: Equatable, CustomDebugStringConvertible {
         case text(Substring)
         case whitespace(Substring, Location)
+
+        var debugDescription: String {
+            return switch self {
+            case .text(let substring):
+                String(substring)
+            case .whitespace(let whitespace, _):
+                String(whitespace)
+            }
+        }
     }
 
     func makeIterator() -> Iterator {
@@ -62,13 +72,18 @@ internal struct WhitespaceSegmentSequence: Sequence {
                     let whitespace = input[range]
                     current = range.upperBound
 
-                    let location: Location
+                    var location: Location
+                    let isStart = range.lowerBound == input.startIndex
+                    let isEnd = range.upperBound == input.endIndex
 
-                    if range.lowerBound == input.startIndex {
+                    switch (isStart, isEnd) {
+                    case (true, true):
+                        location = .single
+                    case (true, false):
                         location = .start
-                    } else if current == input.endIndex {
+                    case (false, true):
                         location = .end
-                    } else {
+                    default:
                         location = .between
                     }
 

@@ -58,7 +58,7 @@ struct WhitespaceCollapseTest {
         let formatter = ParsingEventDebugFormatter()
         let debugDescription = try await formatter.format(whitespaceEvents)
 
-        let expectedText = "[block [remove:↩︎····] [block [remove:↩︎········] [block block] [remove:↩︎····] block] [remove:↩︎····] [block [remove:↩︎↩︎↩︎········] [block [remove:·] [Art] [collapse:····] [Deco] [remove:····] block] [inline [Art Deco got its name after the] [remove:····] [block [remove:··] [1925] [remove:···] block] [remove:···] [Exposition] [remove:·] [inline [collapse:·] [internationale] [collapse:······] inline] [remove:·] [des arts décoratifs et industriels modernes] [remove:↩︎↩︎↩︎········] [(International Exhibition of Modern Decorative and Industrial Arts) held in Paris. Art Deco has its origins in bold geometric forms of the Vienna Secession and Cubism.] [remove:↩︎↩︎···········] inline] [remove:↩︎↩︎········] [inline [collapse:↩︎········] [From its outset, it was influenced] [collapse:····] [by the bright colors of Fauvism and of the Ballets] [collapse:······] [Russes, and the exoticized styles of art from] [collapse:↩︎↩︎·············] [China, Japan, India, Persia, ancient Egypt, and Maya.] inline] [collapse:↩︎↩︎↩︎····] block] [remove:↩︎] block]"
+        let expectedText = "[block [remove:↩︎····] [block [remove:↩︎········] [block block] [remove:↩︎····] block] [remove:↩︎····] [block [remove:↩︎↩︎↩︎········] [block [remove:·] [Art] [collapse:····] [Deco] [remove:····] block] [inline [Art Deco got its name after the] [remove:····] [remove:····] [block [remove:··] [1925] [remove:···] [remove:····] block] [remove:···] [Exposition] [remove:·] [collapse:····] [inline [remove:·] [internationale] [remove:······] [collapse:····] inline] [remove:·] [des arts décoratifs et industriels modernes] [collapse:↩︎↩︎↩︎········] [(International Exhibition of Modern Decorative and Industrial Arts) held in Paris. Art Deco has its origins in bold geometric forms of the Vienna Secession and Cubism.] [remove:↩︎↩︎···········] [collapse:····] inline] [remove:↩︎↩︎········] [inline [remove:↩︎········] [From its outset, it was influenced] [collapse:····] [by the bright colors of Fauvism and of the Ballets] [collapse:······] [Russes, and the exoticized styles of art from] [collapse:↩︎↩︎·············] [China, Japan, India, Persia, ancient Egypt, and Maya.] [remove:····] inline] [remove:↩︎↩︎↩︎····] block] [remove:↩︎] block]"
 
         #expect(debugDescription == expectedText)
     }
@@ -73,7 +73,7 @@ struct WhitespaceCollapseTest {
         let formatter = ParsingEventDebugFormatter()
         let debugDescription = try await formatter.format(collapsedEvents)
 
-        let expectedText = "[html [head [meta meta] head] [body [h1 [Art Deco\n] h1] [span [Art Deco got its name after the] [div [1925] div] [Exposition] [strong [ internationale] strong] [ des arts décoratifs et industriels modernes (International Exhibition of Modern Decorative and Industrial Arts) held in Paris. Art Deco has its origins in bold geometric forms of the Vienna Secession and Cubism.] span] [span [ From its outset, it was influenced by the bright colors of Fauvism and of the Ballets Russes, and the exoticized styles of art from China, Japan, India, Persia, ancient Egypt, and Maya.] span] body] html]"
+        let expectedText = "[html [head [meta meta] head] [body [h1 [Art Deco] h1] [span [Art Deco got its name after the] [div [1925] div] [Exposition ] [strong [internationale ] strong] [des arts décoratifs et industriels modernes (International Exhibition of Modern Decorative and Industrial Arts) held in Paris. Art Deco has its origins in bold geometric forms of the Vienna Secession and Cubism. ] span] [span [From its outset, it was influenced by the bright colors of Fauvism and of the Ballets Russes, and the exoticized styles of art from China, Japan, India, Persia, ancient Egypt, and Maya.] span] body] html]"
 
         #expect(debugDescription == expectedText)
     }
@@ -211,6 +211,13 @@ struct WhitespaceCollapseTest {
         )
     }
 
+    @Test func testInlineSequenceWhitespaceCollapse() async throws {
+        try await testWhitespaceCollapseCase(
+            named: "test-inline-sequence",
+            result: "First Second Third"
+        )
+    }
+
     private func testWhitespaceCollapseCase(named: String, result: String) async throws {
         let string = try await makeEvents(
             WhitespaceCollapseCase.self,
@@ -220,6 +227,21 @@ struct WhitespaceCollapseTest {
             guard let id = attributes["id"] else { return false }
             return id == named
         }
+        .filter({ event in
+            switch event {
+            case .begin(let element, _), .end(let element):
+                switch element {
+                case .html(_):
+                    return true
+                default:
+                    return false
+                }
+            case .text(_):
+                return true
+            default:
+                return false
+            }
+        })
         .map(whitespace: { element, attributes in
             element.whitespacePolicy
         })
