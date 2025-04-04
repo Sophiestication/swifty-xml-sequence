@@ -16,30 +16,30 @@
 </head>
 <body>
 
-    <div class="case" id="test-multiple-spaces"><p>Hello      world!</p></div>
-    <div class="case" id="test-leading-trailing"><div>   Hello		world!   </div></div>
-    <div class="case" id="test-newline-tabs"><p>Hello
+    <div class="case" id="test-multiple-spaces" expect="Hello world!"><p>Hello      world!</p></div>
+    <div class="case" id="test-leading-trailing" expect="Hello world!"><div>   Hello		world!   </div></div>
+    <div class="case" id="test-newline-tabs" expect="Hello world!"><p>Hello
         world!</p></div>
 
-    <div class="case" id="test-before-block" ><span>Hello</span>   <div>World</div></div>
-    <div class="case" id="test-after-block"><div>Hello</div>   <span>World</span></div>
+    <div class="case" id="test-before-block" expect="Hello\nWorld"><span>Hello</span>   <div>World</div></div>
+    <div class="case" id="test-after-block" expect="Hello\nWorld"><div>Hello</div>   <span>World</span></div>
 
-    <div class="case" id="test-inline-space"><span>Hello</span>   <span>World</span></div>
-    <div class="case" id="test-inline-start">Hello<strong>   World</strong></div>
-    <div class="case" id="test-inline-follow">Hello <strong>World</strong></div>
+    <div class="case" id="test-inline-space" expect="Hello World"><span>Hello</span>   <span>World</span></div>
+    <div class="case" id="test-inline-start" expect="Hello World">Hello<strong>   World</strong></div>
+    <div class="case" id="test-inline-follow" expect="Hello World">Hello <strong>World</strong></div>
 
-    <div class="case" id="test-before-leading-inline">Hello <strong> World</strong></div>
-    <div class="case" id="test-before-leading-block">Hello <div> World</div></div>
+    <div class="case" id="test-before-leading-inline" expect="Hello World">Hello <strong> World</strong></div>
+    <div class="case" id="test-before-leading-block" expect="Hello\nWorld">Hello <div> World</div></div>
 
-    <div class="case" id="test-between-inline">Hello <strong> <i>  </i> World</strong></div>
-    <div class="case" id="test-between-block">Hello <strong> <div>	 	 </div> World</strong></div>
+    <div class="case" id="test-between-inline" expect="Hello World">Hello <strong> <i>  </i> World</strong></div>
+    <div class="case" id="test-between-block" expect="HelloWorld">Hello <strong> <div>	 	 </div> World</strong></div>
 
-    <div class="case" id="test-br">Hello<br />World</div>
+    <div class="case" id="test-br" expect="Hello\nWorld">Hello<br />World</div>
 
-    <div class="case" id="test-pre"><pre>   Hello   World  </pre></div>
-    <div class="case" id="test-inline-start-pre"><pre>Hello<strong>   World</strong></pre></div>
+    <div class="case" id="test-pre" expect="   Hello   World  "><pre>   Hello   World  </pre></div>
+    <div class="case" id="test-inline-start-pre" expect="Hello   World"><pre>Hello<strong>   World</strong></pre></div>
 
-    <div class="case" id="test-inline-sequence">  <i>  </i> First <span>Second </span>  <span>Third  </span></div>
+    <div class="case" id="test-inline-sequence" expect="First Second Third">  <i>  </i> First <span>Second </span>  <span>Third  </span></div>
 
 </body>
 </html>
