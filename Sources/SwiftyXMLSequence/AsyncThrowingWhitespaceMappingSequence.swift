@@ -95,21 +95,6 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
                 return "\(formatter.format(preceding)) \(segments)"
             }
 
-            var hasOnlyWhitespace: Bool {
-                if segments.isEmpty {
-                    return false
-                }
-
-                return segments.contains {
-                    return switch $0 {
-                    case .text(_):
-                        false
-                    default:
-                        true
-                    }
-                } == false
-            }
-
             var breaksText: Bool {
                 beginTextBreak || endTextBreak
             }
@@ -287,8 +272,6 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
                     pendingWhitespaceProcessing
                 )
                 events.insert(whitespaceEvent, at: 0)
-
-//                pending = nil
             }
 
             yield(events)
@@ -363,39 +346,6 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
             default:
                 false
             }
-        }
-
-        private func has<S: Sequence>(
-            _ sequence: S,
-            only whitespacePolicy: WhitespacePolicy
-        ) -> Bool
-            where S.Element == CollectedText
-        {
-            has(sequence.flatMap { $0.preceding }, only: whitespacePolicy)
-        }
-
-        private func has<S: Sequence>(
-            _ sequence: S?,
-            only whitespacePolicy: WhitespacePolicy
-        ) -> Bool
-            where S.Element == WhitespaceParsingEvent<T>
-        {
-            guard let sequence else {
-                return false
-            }
-
-            var foundElement = false
-
-            return sequence.first { whitespaceEvent in
-                foundElement = true
-
-                return switch whitespaceEvent {
-                case .event(_, let policy):
-                    policy != whitespacePolicy
-                default:
-                    false
-                }
-            } == nil && foundElement
         }
 
         private mutating func yield(_ event: Element) {
