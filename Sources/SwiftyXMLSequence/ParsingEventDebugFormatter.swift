@@ -34,6 +34,15 @@ public struct ParsingEventDebugFormatter: Sendable {
 
     func format<E, S>(_ sequence: S) async throws -> String
         where S: AsyncSequence,
+              S.Element == LinebreakParsingEvent<E>,
+              E: ElementRepresentable
+    {
+        let array = try await Array(sequence.compactMap { format($0) })
+        return array.joined(separator: " ")
+    }
+
+    func format<E, S>(_ sequence: S) async throws -> String
+        where S: AsyncSequence,
               S.Element == ParsingEvent<E>,
               E: ElementRepresentable
     {
@@ -74,6 +83,28 @@ public struct ParsingEventDebugFormatter: Sendable {
             default:
                 nil
             }
+        }
+    }
+
+    func format<E>(_ event: LinebreakParsingEvent<E>) -> String?
+        where E: ElementRepresentable
+    {
+        switch event {
+        case .whitespace(let string, let processing):
+            return "[\(format(processing)):\(format(whitespace: string))]"
+        case .event(let event, let policy):
+            return switch event {
+            case .begin(_, _):
+                "[\(format(policy))"
+            case .end(_):
+                "\(format(policy))]"
+            case .text(let string):
+                "[\(string)]"
+            default:
+                nil
+            }
+        case .linebreak:
+            return "[↩︎]"
         }
     }
 
