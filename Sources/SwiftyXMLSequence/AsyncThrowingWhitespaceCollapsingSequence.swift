@@ -85,13 +85,10 @@ public struct AsyncThrowingWhitespaceCollapsingSequence<Base, T>: AsyncSequence,
                 }
 
                 switch whitespaceEvent {
-                case .whitespace(let whitespace, let processing):
+                case .whitespace(_, let processing):
                     switch processing {
                     case .collapse:
                         textEvent = appending(" ", to: textEvent)
-                        break
-                    case .linebreak:
-                        textEvent = appending(whitespace, to: textEvent)
                         break
                     default:
                         break

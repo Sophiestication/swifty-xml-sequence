@@ -31,17 +31,21 @@ internal struct WhitespaceSegmentSequence: Sequence {
         case single
     }
 
-    enum Element: Equatable, CustomDebugStringConvertible {
+    enum Element: Equatable, CustomDebugStringConvertible, CustomStringConvertible {
         case text(Substring)
         case whitespace(Substring, Location)
 
-        var debugDescription: String {
+        var description: String {
             return switch self {
             case .text(let substring):
                 String(substring)
             case .whitespace(let whitespace, _):
                 String(whitespace)
             }
+        }
+
+        var debugDescription: String {
+            description
         }
     }
 

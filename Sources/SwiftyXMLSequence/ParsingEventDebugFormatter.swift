@@ -111,8 +111,6 @@ public struct ParsingEventDebugFormatter: Sendable {
             "collapse"
         case .remove:
             "remove"
-        case .linebreak:
-            "linebreak"
         }
     }
 

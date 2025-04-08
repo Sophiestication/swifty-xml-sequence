@@ -36,7 +36,6 @@ public protocol WhitespaceCollapsing {
 public enum WhitespaceProcessing: Equatable, Sendable {
     case collapse
     case remove
-    case linebreak
 }
 
 public enum WhitespaceParsingEvent<Element>: Equatable, Sendable
