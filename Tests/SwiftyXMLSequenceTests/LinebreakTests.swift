@@ -1,12 +1,4 @@
 //
-//  WhitespaceCollapseTest 2.swift
-//  SwiftyXMLSequence
-//
-//  Created by Sophiestication Software on 4/8/25.
-//
-
-
-//
 // MIT License
 //
 // Copyright (c) 2025 Sophiestication Software, Inc.

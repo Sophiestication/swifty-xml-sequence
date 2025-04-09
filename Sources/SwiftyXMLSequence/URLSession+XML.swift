@@ -54,7 +54,8 @@ extension URLSession {
 
                 task.delegate = ParsingSessionDelegate<Element>(
                     with: responseContinuation,
-                    dataContinuation: dataContinuation
+                    dataContinuation: dataContinuation,
+                    delegate: delegate
                 )
 
                 task.resume()
@@ -81,6 +82,8 @@ private final class ParsingSessionDelegate<
     >.Continuation
     private let dataContinuation: DataContinuation?
 
+    private let delegate: URLSessionTaskDelegate?
+
     private var response: URLResponse? = nil
     private var parser: PushParser? = nil
 
@@ -88,17 +91,20 @@ private final class ParsingSessionDelegate<
 
     init(
         with responseContinuation: ResponseContinuation,
-        dataContinuation: DataContinuation
+        dataContinuation: DataContinuation,
+        delegate: URLSessionTaskDelegate? = nil
     ) {
         self.responseContinuation = responseContinuation
         self.dataContinuation = dataContinuation
+        self.delegate = delegate
     }
 
     func urlSession(
         _ session: URLSession,
         dataTask: URLSessionDataTask,
-        didReceive response: URLResponse
-    ) async -> URLSession.ResponseDisposition {
+        didReceive response: URLResponse,
+        completionHandler: @escaping @Sendable (URLSession.ResponseDisposition) -> Void
+    ) {
         self.response = response
 
         if let continuation = self.responseContinuation {
@@ -106,7 +112,17 @@ private final class ParsingSessionDelegate<
             self.responseContinuation = nil
         }
 
-        return .allow
+        if let dataDelegate = delegate as? URLSessionDataDelegate,
+           dataDelegate.responds(to:#selector(URLSessionDataDelegate.urlSession(_:dataTask:didReceive:completionHandler:))) {
+            dataDelegate.urlSession?(
+                session,
+                dataTask: dataTask,
+                didReceive: response,
+                completionHandler: completionHandler
+            )
+        } else {
+            completionHandler(.allow)
+        }
     }
 
     func urlSession(
@@ -114,6 +130,10 @@ private final class ParsingSessionDelegate<
         dataTask: URLSessionDataTask,
         didReceive data: Data
     ) {
+        if let dataDelegate = delegate as? URLSessionDataDelegate {
+            dataDelegate.urlSession?(session, dataTask: dataTask, didReceive: data)
+        }
+
         if parser == nil {
             parser = makePushParser()
         }
@@ -152,6 +172,16 @@ private final class ParsingSessionDelegate<
                 }
             }
         }
+
+        delegate?.urlSession?(session, task: task, didCompleteWithError: error)
+    }
+
+    override func responds(to aSelector: Selector!) -> Bool {
+        super.responds(to: aSelector) || delegate?.responds(to: aSelector) == true
+    }
+
+    override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        delegate
     }
 
     private func makePushParser() -> PushParser {
