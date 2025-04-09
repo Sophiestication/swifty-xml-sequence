@@ -22,114 +22,36 @@
 //
 
 import Foundation
+import AsyncAlgorithms
+
+public typealias AsyncThrowingWhitespaceCollapsingSequence<
+    Base: AsyncSequence,
+    T: ElementRepresentable
+> = AsyncThrowingFlatMapSequence<
+        AsyncChunkedByGroupSequence<
+            AsyncCompactMapSequence<Base, ParsingEvent<T>>,
+            [AsyncCompactMapSequence<Base, ParsingEvent<T>>.Element]
+        >,
+        AsyncSyncSequence<[AsyncCompactMapSequence<Base, ParsingEvent<T>>.Element]>
+    >
 
 extension AsyncSequence  {
     public func collapse<T: ElementRepresentable>(
     ) async rethrows -> AsyncThrowingWhitespaceCollapsingSequence<Self, T>
         where Element == WhitespaceParsingEvent<T>
     {
-        AsyncThrowingWhitespaceCollapsingSequence(base: self)
-    }
-
-    public func collapseWhitespace<T: ElementRepresentable & WhitespaceCollapsing>(
-    ) async rethrows ->
-        AsyncThrowingWhitespaceCollapsingSequence<
-            AsyncThrowingWhitespaceMappingSequence<Self, T>, T
-        >
-        where Element == ParsingEvent<T>
-    {
-        try await self.map(whitespace: { element, attributes in
-            element.whitespacePolicy
-        })
-        .collapse()
-    }
-}
-
-public struct AsyncThrowingWhitespaceCollapsingSequence<Base, T>: AsyncSequence, Sendable
-    where Base: AsyncSequence,
-          Base: Sendable,
-          Base.Element == WhitespaceParsingEvent<T>,
-          T: ElementRepresentable
-{
-    private let base: Base
-
-    internal init(base: Base) {
-        self.base = base
-    }
-
-    public func makeAsyncIterator() -> Iterator {
-        return Iterator(base.makeAsyncIterator())
-    }
-
-    public struct Iterator: AsyncIteratorProtocol {
-        public typealias Element = ParsingEvent<T>
-
-        private var base: Base.AsyncIterator
-        private var pending: Element? = nil
-
-        internal init(_ base: Base.AsyncIterator) {
-            self.base = base
-        }
-
-        public mutating func next() async throws -> Element? {
-            if let pending {
-                self.pending = nil
-                return pending
-            }
-
-            var textEvent: Element? = nil
-
-            while true {
-                guard let whitespaceEvent = try await base.next() else {
-                    return textEvent
-                }
-
-                switch whitespaceEvent {
-                case .whitespace(_, let processing):
-                    switch processing {
-                    case .collapse:
-                        textEvent = appending(" ", to: textEvent)
-                        break
-                    default:
-                        break
-                    }
-
-                    break
-                case .event(let event, _):
-                    switch event {
-                    case .text(let string):
-                        textEvent = appending(string, to: textEvent)
-                        break
-                    default:
-                        if textEvent == nil {
-                            return event
-                        } else {
-                            pending = event
-                            return textEvent
-                        }
-                    }
-                    break
+        try await compactMap {
+            return switch $0 {
+            case .event(let event, _):
+                event
+            case .whitespace(_, let processing):
+                if processing == .collapse {
+                    .text(" ")
+                } else {
+                    nil
                 }
             }
-
-            return textEvent
         }
-
-        private func appending(_ string: String, to textEvent: Element?) -> Element? {
-            guard let textEvent else {
-                return .text(string)
-            }
-
-            return .text(text(from: textEvent) + string)
-        }
-
-        private func text(from event: Element) -> String {
-            return switch event {
-            case .text(let string):
-                string
-            default:
-                String()
-            }
-        }
+        .joinAdjacentText()
     }
 }
