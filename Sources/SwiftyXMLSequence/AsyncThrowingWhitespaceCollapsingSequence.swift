@@ -1,3 +1,4 @@
+//
 // MIT License
 //
 // Copyright (c) 2025 Sophiestication Software, Inc.
@@ -50,6 +51,27 @@ extension AsyncSequence  {
                 } else {
                     nil
                 }
+            }
+        }
+        .joinAdjacentText()
+    }
+
+    public func collapse<T: ElementRepresentable>(
+    ) async rethrows -> AsyncThrowingWhitespaceCollapsingSequence<Self, T>
+        where Element == LinebreakParsingEvent<T>
+    {
+        try await compactMap {
+            return switch $0 {
+            case .event(let event, _):
+                event
+            case .whitespace(_, let processing):
+                if processing == .collapse {
+                    .text(" ")
+                } else {
+                    nil
+                }
+            case .linebreak:
+                .text("\n")
             }
         }
         .joinAdjacentText()
