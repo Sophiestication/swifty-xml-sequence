@@ -29,16 +29,19 @@ public enum LinebreakParsingEvent<Element>: Equatable, Sendable
 {
     case event(ParsingEvent<Element>, WhitespacePolicy)
     case whitespace(String, WhitespaceProcessing)
-    case linebreak
+    case linebreak(String)
 }
 
 extension AsyncSequence where Self: Sendable {
-    public func mapLinebreaks<T: ElementRepresentable>(
-
+    public func map<T: ElementRepresentable>(
+        linebreaks transform: @Sendable @escaping (
+            _ element: T,
+            _ attributes: Attributes
+        ) -> String
     ) async rethrows -> AsyncThrowingLinebreakMappingSequence<Self, T>
         where Element == WhitespaceParsingEvent<T>
     {
-        return try await AsyncThrowingLinebreakMappingSequence(base: self)
+        return try await AsyncThrowingLinebreakMappingSequence(base: self, transform: transform)
     }
 }
 
@@ -50,27 +53,41 @@ public struct AsyncThrowingLinebreakMappingSequence<Base, T>: AsyncSequence, Sen
 {
     private var base: Base
 
-    internal init(base: Base) async throws {
+    internal typealias Transform = @Sendable (
+        _ element: T,
+        _ attributes: Attributes
+    ) -> String
+
+    private let transform: Transform
+
+    internal init(base: Base, transform: @escaping Transform) async throws {
         self.base = base
+        self.transform = transform
     }
 
     public typealias Element = Iterator.Element
 
     public func makeAsyncIterator() -> Iterator {
-        return Iterator(base.makeAsyncIterator())
+        return Iterator(base.makeAsyncIterator(), transform: transform)
     }
 
     public struct Iterator: AsyncIteratorProtocol {
         public typealias Element = LinebreakParsingEvent<T>
 
         private var base: Base.AsyncIterator
+        private var transform: Transform
 
         private var preparedInlineText: Bool = false
+
+        private var collectedLinebreakElement: ParsingEvent<T>? = nil
+        private var pendingLinebreakElement: ParsingEvent<T>? = nil
         private var pendingLinebreak: Bool = false
+
         private var prepared: [Element] = []
 
-        fileprivate init(_ base: Base.AsyncIterator) {
+        fileprivate init(_ base: Base.AsyncIterator, transform: @escaping Transform) {
             self.base = base
+            self.transform = transform
         }
 
         public mutating func next() async throws -> Element? {
@@ -87,11 +104,17 @@ public struct AsyncThrowingLinebreakMappingSequence<Base, T>: AsyncSequence, Sen
                 case .event(let event, let policy):
                     switch event {
                     case .begin(_, _), .end(_):
-                        if policy == .block,
-                           preparedInlineText
-                        {
-                            preparedInlineText = false
-                            pendingLinebreak = true
+                        if policy == .block {
+                            if preparedInlineText {
+                                preparedInlineText = false
+
+                                pendingLinebreak = true
+                                pendingLinebreakElement = collectedLinebreakElement
+                            }
+
+                            if case .begin(_, _) = event {
+                                collectedLinebreakElement = event
+                            }
                         }
 
                         yield(whitespaceEvent)
@@ -157,10 +180,21 @@ public struct AsyncThrowingLinebreakMappingSequence<Base, T>: AsyncSequence, Sen
 
         private mutating func yieldPendingLinebreak() {
             if pendingLinebreak {
-                prepared.insert(.linebreak, at: 0)
+                let string = linebreak(for: pendingLinebreakElement)
+                prepared.insert(.linebreak(string), at: 0)
             }
 
             self.pendingLinebreak = false
+            self.pendingLinebreakElement = nil
+        }
+
+        private func linebreak(for event: ParsingEvent<T>?) -> String {
+            return switch event {
+            case .begin(let element, let attributes):
+                transform(element, attributes)
+            default:
+                "\n"
+            }
         }
     }
 }

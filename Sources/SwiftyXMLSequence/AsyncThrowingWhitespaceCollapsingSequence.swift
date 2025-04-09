@@ -70,8 +70,8 @@ extension AsyncSequence  {
                 } else {
                     nil
                 }
-            case .linebreak:
-                .text("\n")
+            case .linebreak(let linebreak):
+                .text(linebreak)
             }
         }
         .joinAdjacentText()
