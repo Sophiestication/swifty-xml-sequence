@@ -60,10 +60,10 @@ struct LinebreakTest {
         let events = try await makeEvents(HTMLElement.self, for: "whitespace-collapse")
 
         let whitespaceEvents = try await events
-            .map(whitespace: { element, attributes in
+            .map(whitespace: { element, _ in
                 element.whitespacePolicy
             })
-            .map (linebreaks: { element, attributes in
+            .map(linebreaks: { _, _ in
                 "\n"
             })
 
@@ -85,7 +85,7 @@ struct LinebreakTest {
                     false
                 }
             })
-            .filter({ element, attributes in
+            .filter({ element, _ in
                 return switch element {
                 case .figure, .style:
                     false
@@ -111,7 +111,7 @@ struct LinebreakTest {
             .map(whitespace: { element, _ in
                 element.whitespacePolicy
             })
-            .map(linebreaks: { element, attributes in
+            .map(linebreaks: { element, _ in
                 return switch element {
                 case .title, .h1, .h2, .h3, .h4, .h5, .h6, .p, .ul, .ol, .li:
                     "\n \n"
