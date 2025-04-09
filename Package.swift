@@ -33,11 +33,11 @@ let package = Package(
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms") 
             ],
             resources: [
-                .copy("trivia.xml"),
-                .copy("sample1.html"),
-                .copy("sample2.html"),
-                .copy("whitespace-collapse.html"),
-                .copy("whitespace-collapse-cases.html")
+                .copy("Samples/trivia.xml"),
+                .copy("Samples/sample1.html"),
+                .copy("Samples/sample2.html"),
+                .copy("Samples/whitespace-collapse.html"),
+                .copy("Samples/whitespace-collapse-cases.html")
             ]
         ),
     ]
