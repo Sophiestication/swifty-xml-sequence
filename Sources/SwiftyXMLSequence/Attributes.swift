@@ -39,3 +39,15 @@ public extension Attributes {
             .contains { $0.caseInsensitiveCompare(name) == .orderedSame }
     }
 }
+
+public extension Attributes {
+    func contains(id identifiers: Set<String>) -> Bool {
+        guard let value = self.first(
+            where: { $0.key.caseInsensitiveCompare("id") == .orderedSame }
+        )?.value else {
+            return false
+        }
+
+        return identifiers.contains(value)
+    }
+}

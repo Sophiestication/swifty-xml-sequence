@@ -91,11 +91,8 @@ struct LinebreakTest {
                 if attributes.contains(class: "reflist") { return false }
                 if attributes.contains(class: "navigation-not-searchable") { return false }
 
-                if let id = attributes["id"] {
-                    if id == "mw6Q" { return false }
-                    if id == "mw7A" { return false }
-                    if id == "mwAUU" { return false }
-                    if id == "mwAWI" { return false }
+                if attributes.contains(id: ["mw6Q", "mw7A", "mwAUU", "mwAWI"]) {
+                    return false
                 }
 
                 return true
