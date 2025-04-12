@@ -30,17 +30,17 @@ extension AsyncSequence {
             _ element: T,
             _ attributes: Attributes
         ) throws -> Bool
-    ) async rethrows -> AsyncThrowingCollecyElementSequence<Self, T>
+    ) async rethrows -> AsyncThrowingCollectElementSequence<Self, T>
         where Element == ParsingEvent<T>
     {
-        return AsyncThrowingCollecyElementSequence(
+        return AsyncThrowingCollectElementSequence(
             base: self,
             predicate: matching
         )
     }
 }
 
-public struct AsyncThrowingCollecyElementSequence<Base, T>: AsyncSequence, Sendable
+public struct AsyncThrowingCollectElementSequence<Base, T>: AsyncSequence, Sendable
     where Base: AsyncSequence,
           Base: Sendable,
           Base.Element == ParsingEvent<T>,
