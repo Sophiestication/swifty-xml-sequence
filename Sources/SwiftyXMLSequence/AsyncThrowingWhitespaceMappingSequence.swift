@@ -26,7 +26,7 @@ import Foundation
 import Algorithms
 import AsyncAlgorithms
 
-extension AsyncSequence where Self: Sendable {
+extension AsyncSequence {
     public func map<T: ElementRepresentable>(
         whitespace policy: @Sendable @escaping (
             _ element: T,
@@ -39,14 +39,13 @@ extension AsyncSequence where Self: Sendable {
     }
 }
 
-public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Sendable
+public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence
     where Base: AsyncSequence,
-          Base: Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
 {
     fileprivate typealias PrivateBase = AsyncFlatMapSequence<
-        AsyncThrowingMapElementSequence<
+        AsyncThrowingMapWithContextElementSequence<
             AsyncThrowingFlatMapSequence<
                 AsyncChunkedByGroupSequence<
                     Base, [Base.Element]
@@ -64,7 +63,7 @@ public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence, Se
     internal init(base: Base, policy: @escaping Policy) async throws {
         self.base = try await base
             .joinAdjacentText()
-            .map { (context, event) -> Element in
+            .mapWithContext { (context, event) -> Element in
                 return switch event {
                 case .begin(let element, let attributes):
                     .event(event, policy(element, attributes))

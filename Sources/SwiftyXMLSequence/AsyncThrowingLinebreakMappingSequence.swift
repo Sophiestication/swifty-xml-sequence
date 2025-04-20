@@ -24,7 +24,7 @@
 
 import Foundation
 
-public enum LinebreakParsingEvent<Element>: Equatable, Sendable
+public enum LinebreakParsingEvent<Element>: Equatable
     where Element: ElementRepresentable
 {
     case event(ParsingEvent<Element>, WhitespacePolicy)
@@ -32,7 +32,7 @@ public enum LinebreakParsingEvent<Element>: Equatable, Sendable
     case linebreak(String)
 }
 
-extension AsyncSequence where Self: Sendable {
+extension AsyncSequence {
     public func map<T: ElementRepresentable>(
         linebreaks transform: @Sendable @escaping (
             _ element: T,
@@ -45,9 +45,8 @@ extension AsyncSequence where Self: Sendable {
     }
 }
 
-public struct AsyncThrowingLinebreakMappingSequence<Base, T>: AsyncSequence, Sendable
+public struct AsyncThrowingLinebreakMappingSequence<Base, T>: AsyncSequence
     where Base: AsyncSequence,
-          Base: Sendable,
           Base.Element == WhitespaceParsingEvent<T>,
           T: ElementRepresentable
 {

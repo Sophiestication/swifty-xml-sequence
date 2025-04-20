@@ -24,84 +24,63 @@
 
 import Foundation
 
-extension AsyncSequence {
-    public func collect<T: ElementRepresentable>(
-        _ matching: @Sendable @escaping (
-            _ element: T,
-            _ attributes: Attributes
-        ) throws -> Bool
-    ) async rethrows -> AsyncThrowingCollectElementSequence<Self, T>
-        where Element == ParsingEvent<T>
-    {
-        return AsyncThrowingCollectElementSequence(
-            base: self,
-            predicate: matching
-        )
-    }
-}
-
-public struct AsyncThrowingCollectElementSequence<Base, T>: AsyncSequence
-    where Base: AsyncSequence,
+public final class AsyncThrowingElementSequence<Base, T>: AsyncSequence
+    where Base: AsyncIteratorProtocol,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
 {
     private let base: Base
 
-    internal typealias Predicate = @Sendable (
-        _ element: T,
-        _ attributes: Attributes
-    ) throws -> Bool
+    internal final class IteratorState: @unchecked Sendable {
+        var depth = 1
+        var terminated = false
+    }
+    private let state = IteratorState()
 
-    private let predicate: Predicate
-
-    internal init(base: Base, predicate: @escaping Predicate) {
+    internal init(base: Base) {
         self.base = base
-        self.predicate = predicate
     }
 
     public func makeAsyncIterator() -> Iterator {
-        return Iterator(base.makeAsyncIterator(), predicate: predicate)
+        return Iterator(base, state)
     }
 
     public struct Iterator: AsyncIteratorProtocol {
         public typealias Element = ParsingEvent<T>
 
-        private var base: Base.AsyncIterator
-        private let predicate: Predicate
+        private var base: Base
 
-        internal init(_ base: Base.AsyncIterator, predicate: @escaping Predicate) {
+        internal init(_ base: Base, _ state: IteratorState) {
             self.base = base
-            self.predicate = predicate
+            self.state = state
         }
 
-        private var depth = 0
+        private var state: IteratorState
 
         public mutating func next() async throws -> Element? {
-            var nextEvent = try await base.next()
+            guard state.terminated == false else {
+                return nil
+            }
 
-            if depth == 0 {
-                while nextEvent != nil {
-                    if case .begin(let element, let attributes) = nextEvent {
-                        if try predicate(element, attributes) {
-                            depth = 1
-                            return nextEvent
-                        }
-                    }
+            let event = try await base.next()
 
-                    nextEvent = try await base.next()
-                }
-            } else if let nextEvent {
-                switch nextEvent {
+            if let event {
+                switch event {
                 case .begin(_, attributes: _):
-                    depth += 1
+                    state.depth += 1
                 case .end(_):
-                    depth -= 1
+                    state.depth -= 1
                 default:
                     break
                 }
             }
 
-            return nextEvent
+            if event == nil || state.depth <= 0 { // found end of element
+                state.terminated = true
+                return nil
+            }
+
+            return event
         }
     }
 }

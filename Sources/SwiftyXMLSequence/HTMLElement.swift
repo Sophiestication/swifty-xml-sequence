@@ -187,7 +187,7 @@ extension HTMLElement: WhitespaceCollapsing {
              .output, .progress, .meter, .details, .summary:
             .inline
 
-        case .pre, .textarea, .head:
+        case .pre, .textarea:
             .preserve
 
         default:

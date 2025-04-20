@@ -25,23 +25,30 @@
 import Foundation
 
 extension AsyncSequence {
-    public func map<T: ElementRepresentable, Result>(
+    internal func mapWithContext<T: ElementRepresentable, Result>(
         _ transform: @Sendable @escaping (
-            _ element: T,
-            _ attributes: Attributes,
-            _ sequence: AsyncThrowingElementSequence<Self.AsyncIterator, T>
-        ) async throws -> Result
-    ) async rethrows -> AsyncThrowingMapElementSequence<Self, T, Result>
+            _ context: [ParsingEventMappingContext<T, Result>],
+            _ event: Element
+        ) throws -> Result
+    ) async rethrows -> AsyncThrowingMapWithContextElementSequence<Self, T, Result>
         where Element == ParsingEvent<T>
     {
-        return AsyncThrowingMapElementSequence(
+        return AsyncThrowingMapWithContextElementSequence(
             base: self,
             transform: transform
         )
     }
 }
 
-public struct AsyncThrowingMapElementSequence<Base, T, Result>: AsyncSequence
+internal struct ParsingEventMappingContext <
+    T, Result
+> where T: ElementRepresentable {
+    var element: T
+    var attributes: Attributes
+    var mappedResult: Result
+}
+
+internal struct AsyncThrowingMapWithContextElementSequence<Base, T, Result>: AsyncSequence
     where Base: AsyncSequence,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
@@ -49,10 +56,9 @@ public struct AsyncThrowingMapElementSequence<Base, T, Result>: AsyncSequence
     private let base: Base
 
     internal typealias Transform = @Sendable (
-        _ element: T,
-        _ attributes: Attributes,
-        _ sequence: AsyncThrowingElementSequence<Base.AsyncIterator, T>
-    ) async throws -> Result
+        _ context: [ParsingEventMappingContext<T, Result>],
+        _ event: Base.Element
+    ) throws -> Result
 
     private let transform: Transform
 
@@ -76,44 +82,32 @@ public struct AsyncThrowingMapElementSequence<Base, T, Result>: AsyncSequence
             self.transform = transform
         }
 
-        public mutating func next() async throws -> Element? {
-            let event = try await base.next()
+        public typealias Context = ParsingEventMappingContext<T, Result>
+        private var context: [Context] = []
 
-            if let event {
-                switch event {
-                case .begin(let element, let attributes):
-                    return try await map(next: event, element, attributes)
-                default:
-                    throw Error.unexpectedEvent(event: event)
-                }
+        public mutating func next() async throws -> Element? {
+            guard let event = try await base.next() else {
+                return nil
             }
 
-            return nil
-        }
+            let result = try transform(context, event)
 
-        private func map(
-            next event: Base.Element,
-            _ element: T,
-            _ attributes: Attributes
-        ) async throws -> Result {
-            let sequence = AsyncThrowingElementSequence(base: base)
+            switch event {
+            case .begin(let element, let attributes):
+                context.append(
+                    Context(element: element, attributes: attributes, mappedResult: result)
+                )
+                break
 
-            let result = try await transform(element, attributes, sequence)
+            case .end(_):
+                _ = context.popLast()
+                break
 
-            _ = try await sequence.reduce(()) { _, _ in } // consume remaining
+            default:
+                break
+            }
 
             return result
-        }
-    }
-
-    public enum Error: Swift.Error, CustomStringConvertible, Equatable {
-        case unexpectedEvent(event: Base.Element)
-
-        public var description: String {
-            return switch self {
-            case .unexpectedEvent(let event):
-                "Expected a .begin event, but found: \(event)"
-            }
         }
     }
 }
