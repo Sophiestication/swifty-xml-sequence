@@ -26,7 +26,7 @@ import Testing
 import Foundation
 @testable import SwiftyXMLSequence
 
-struct ElementMapReduceTest {
+struct ChunkByElementTests {
     enum Error: Swift.Error {
         case fileNoSuchFile
         case unexpectedElement
