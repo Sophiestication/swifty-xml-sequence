@@ -30,10 +30,10 @@ extension AsyncSequence {
             _ context: [ParsingEventMappingContext<T, Result>],
             _ event: Element
         ) throws -> Result
-    ) async rethrows -> AsyncThrowingMapWithContextElementSequence<Self, T, Result>
+    ) async rethrows -> AsyncMapWithContextElementSequence<Self, T, Result>
         where Element == ParsingEvent<T>
     {
-        return AsyncThrowingMapWithContextElementSequence(
+        return AsyncMapWithContextElementSequence(
             base: self,
             transform: transform
         )
@@ -48,7 +48,7 @@ internal struct ParsingEventMappingContext <
     var mappedResult: Result
 }
 
-internal struct AsyncThrowingMapWithContextElementSequence<
+internal struct AsyncMapWithContextElementSequence<
     Base, T, Result
 >: AsyncSequence & Sendable
     where Base: AsyncSequence & Sendable,

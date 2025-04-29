@@ -25,22 +25,22 @@
 import Foundation
 
 extension AsyncSequence {
-    public func collect<T: ElementRepresentable>(
-        _ matching: @Sendable @escaping (
+    public func chunked<T: ElementRepresentable, Group>(
+        by matchingElement: @Sendable @escaping (
             _ element: T,
             _ attributes: Attributes
-        ) throws -> Bool
-    ) async rethrows -> AsyncThrowingCollectElementSequence<Self, T>
+        ) throws -> Group?
+    ) async rethrows -> AsyncChunkedByElementSequence<Self, T, Group>
         where Element == ParsingEvent<T>
     {
-        return AsyncThrowingCollectElementSequence(
+        return AsyncChunkedByElementSequence(
             base: self,
-            predicate: matching
+            predicate: matchingElement
         )
     }
 }
 
-public struct AsyncThrowingCollectElementSequence<Base, T>: AsyncSequence & Sendable
+public struct AsyncChunkedByElementSequence<Base, T, Group>: AsyncSequence & Sendable
     where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
@@ -50,7 +50,7 @@ public struct AsyncThrowingCollectElementSequence<Base, T>: AsyncSequence & Send
     internal typealias Predicate = @Sendable (
         _ element: T,
         _ attributes: Attributes
-    ) throws -> Bool
+    ) throws -> Group?
 
     private let predicate: Predicate
 
@@ -64,44 +64,76 @@ public struct AsyncThrowingCollectElementSequence<Base, T>: AsyncSequence & Send
     }
 
     public struct Iterator: AsyncIteratorProtocol {
-        public typealias Element = ParsingEvent<T>
+        public typealias Element = (Group?, [Base.Element])
+        private typealias Event = Base.Element
 
-        private var base: Base.AsyncIterator
+        private var base: PeekingAsyncIterator<Base.AsyncIterator>
         private let predicate: Predicate
 
+        private var pending: Element? = nil
+
         internal init(_ base: Base.AsyncIterator, predicate: @escaping Predicate) {
-            self.base = base
+            self.base = PeekingAsyncIterator(base: base)
             self.predicate = predicate
         }
 
-        private var depth = 0
-
         public mutating func next() async throws -> Element? {
-            var nextEvent = try await base.next()
+            if let pending {
+                self.pending = nil
+                return pending
+            }
 
-            if depth == 0 {
-                while nextEvent != nil {
-                    if case .begin(let element, let attributes) = nextEvent {
-                        if try predicate(element, attributes) {
-                            depth = 1
-                            return nextEvent
+            var chunk: [Event] = []
+
+            while let event = try await base.peek() {
+                if case .begin(let element, let attributes) = event {
+                    let group = try predicate(element, attributes)
+
+                    if group != nil {
+                        let element = try await nextElement()
+
+                        if chunk.isEmpty {
+                            return (group, element)
+                        } else {
+                            pending = (group, element)
+                            return (nil, chunk)
                         }
                     }
-
-                    nextEvent = try await base.next()
                 }
-            } else if let nextEvent {
-                switch nextEvent {
+
+                _ = try await base.next()
+                chunk.append(event)
+            }
+
+            if chunk.isEmpty {
+                return nil
+            }
+
+            return (nil, chunk)
+        }
+
+        private mutating func nextElement() async throws -> [Event] {
+            var element: [Event] = []
+            var depth = 0
+
+            while let event = try await base.next() {
+                element.append(event)
+
+                switch event {
                 case .begin(_, attributes: _):
                     depth += 1
                 case .end(_):
                     depth -= 1
+
+                    if depth <= 0 {
+                        return element
+                    }
                 default:
                     break
                 }
             }
 
-            return nextEvent
+            return element
         }
     }
 }

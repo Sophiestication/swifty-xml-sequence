@@ -25,7 +25,7 @@
 import Foundation
 import AsyncAlgorithms
 
-public typealias AsyncThrowingWhitespaceCollapsingSequence<
+public typealias AsyncWhitespaceCollapsingSequence<
     Base: AsyncSequence,
     T: ElementRepresentable
 > = AsyncThrowingFlatMapSequence<
@@ -38,7 +38,7 @@ public typealias AsyncThrowingWhitespaceCollapsingSequence<
 
 extension AsyncSequence  {
     public func collapse<T: ElementRepresentable>(
-    ) async rethrows -> AsyncThrowingWhitespaceCollapsingSequence<Self, T>
+    ) async rethrows -> AsyncWhitespaceCollapsingSequence<Self, T>
         where Element == WhitespaceParsingEvent<T>
     {
         try await compactMap {
@@ -57,7 +57,7 @@ extension AsyncSequence  {
     }
 
     public func collapse<T: ElementRepresentable>(
-    ) async rethrows -> AsyncThrowingWhitespaceCollapsingSequence<Self, T>
+    ) async rethrows -> AsyncWhitespaceCollapsingSequence<Self, T>
         where Element == LinebreakParsingEvent<T>
     {
         try await compactMap {

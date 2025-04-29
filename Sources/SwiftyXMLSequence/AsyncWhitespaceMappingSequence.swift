@@ -32,26 +32,26 @@ extension AsyncSequence {
             _ element: T,
             _ attributes: Attributes
         ) -> WhitespacePolicy
-    ) async rethrows -> AsyncThrowingWhitespaceMappingSequence<Self, T>
+    ) async rethrows -> AsyncWhitespaceMappingSequence<Self, T>
         where Element == ParsingEvent<T>
     {
-        return try await AsyncThrowingWhitespaceMappingSequence(base: self, policy: policy)
+        return try await AsyncWhitespaceMappingSequence(base: self, policy: policy)
     }
 }
 
-public struct AsyncThrowingWhitespaceMappingSequence<Base, T>: AsyncSequence & Sendable
+public struct AsyncWhitespaceMappingSequence<Base, T>: AsyncSequence & Sendable
     where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
 {
     fileprivate typealias PrivateBase = AsyncFlatMapSequence<
-        AsyncThrowingMapWithContextElementSequence<
+        AsyncMapWithContextElementSequence<
             AsyncThrowingFlatMapSequence<
                 AsyncChunkedByGroupSequence<
                     Base, [Base.Element]
                 >, AsyncSyncSequence<[Base.Element]>
-            >, T, AsyncThrowingWhitespaceMappingSequence<Base, T>.Element
-        >, AsyncSyncSequence<[AsyncThrowingWhitespaceMappingSequence<Base, T>.Element]>
+            >, T, AsyncWhitespaceMappingSequence<Base, T>.Element
+        >, AsyncSyncSequence<[AsyncWhitespaceMappingSequence<Base, T>.Element]>
     > // ☠️
     private var base: PrivateBase
 

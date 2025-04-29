@@ -38,14 +38,14 @@ extension AsyncSequence {
             _ element: T,
             _ attributes: Attributes
         ) -> String
-    ) async rethrows -> AsyncThrowingLinebreakMappingSequence<Self, T>
+    ) async rethrows -> AsyncLinebreakMappingSequence<Self, T>
         where Element == WhitespaceParsingEvent<T>
     {
-        return try await AsyncThrowingLinebreakMappingSequence(base: self, transform: transform)
+        return try await AsyncLinebreakMappingSequence(base: self, transform: transform)
     }
 }
 
-public struct AsyncThrowingLinebreakMappingSequence<Base, T>: AsyncSequence & Sendable
+public struct AsyncLinebreakMappingSequence<Base, T>: AsyncSequence & Sendable
     where Base: AsyncSequence & Sendable,
           Base.Element == WhitespaceParsingEvent<T>,
           T: ElementRepresentable

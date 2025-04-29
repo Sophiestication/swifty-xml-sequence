@@ -25,22 +25,22 @@
 import Foundation
 
 extension AsyncSequence {
-    public func filter<T: ElementRepresentable>(
-        _ isIncluded: @Sendable @escaping (
+    public func collect<T: ElementRepresentable>(
+        _ matching: @Sendable @escaping (
             _ element: T,
             _ attributes: Attributes
         ) throws -> Bool
-    ) async rethrows -> AsyncThrowingFilterElementSequence<Self, T>
+    ) async rethrows -> AsyncCollectElementSequence<Self, T>
         where Element == ParsingEvent<T>
     {
-        return AsyncThrowingFilterElementSequence(
+        return AsyncCollectElementSequence(
             base: self,
-            predicate: isIncluded
+            predicate: matching
         )
     }
 }
 
-public struct AsyncThrowingFilterElementSequence<Base, T>: AsyncSequence & Sendable
+public struct AsyncCollectElementSequence<Base, T>: AsyncSequence & Sendable
     where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
@@ -74,34 +74,34 @@ public struct AsyncThrowingFilterElementSequence<Base, T>: AsyncSequence & Senda
             self.predicate = predicate
         }
 
-        public mutating func next() async throws -> Element? {
-            var depth = 0
+        private var depth = 0
 
-            while let nextEvent = try await base.next() {
-                if depth == 0 {
+        public mutating func next() async throws -> Element? {
+            var nextEvent = try await base.next()
+
+            if depth == 0 {
+                while nextEvent != nil {
                     if case .begin(let element, let attributes) = nextEvent {
-                        if try predicate(element, attributes) == false {
+                        if try predicate(element, attributes) {
                             depth = 1
-                            continue
+                            return nextEvent
                         }
                     }
 
-                    return nextEvent
-                } else {
-                    switch nextEvent {
-                    case .begin(_, attributes: _):
-                        depth += 1
-                        break
-                    case .end(_):
-                        depth -= 1
-                        break
-                    default:
-                        break
-                    }
+                    nextEvent = try await base.next()
+                }
+            } else if let nextEvent {
+                switch nextEvent {
+                case .begin(_, attributes: _):
+                    depth += 1
+                case .end(_):
+                    depth -= 1
+                default:
+                    break
                 }
             }
 
-            return nil
+            return nextEvent
         }
     }
 }
