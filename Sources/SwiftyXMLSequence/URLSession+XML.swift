@@ -53,7 +53,7 @@ extension URLSession {
                 let task = self.dataTask(with: request)
 
                 task.delegate = ParsingSessionDelegate<Element>(
-                    with: responseContinuation,
+                    responseContinuation: responseContinuation,
                     dataContinuation: dataContinuation,
                     delegate: delegate
                 )
@@ -80,7 +80,7 @@ private final class ParsingSessionDelegate<
     typealias DataContinuation = URLSession.AsyncXMLParsingEvents <
         Element
     >.Continuation
-    private let dataContinuation: DataContinuation?
+    private let dataContinuation: DataContinuation
 
     private let delegate: URLSessionTaskDelegate?
 
@@ -90,7 +90,7 @@ private final class ParsingSessionDelegate<
     private var elementStack: [Element] = []
 
     init(
-        with responseContinuation: ResponseContinuation,
+        responseContinuation: ResponseContinuation,
         dataContinuation: DataContinuation,
         delegate: URLSessionTaskDelegate? = nil
     ) {
@@ -141,9 +141,7 @@ private final class ParsingSessionDelegate<
         do {
             try parser!.push(data)
         } catch {
-            if let continuation = self.dataContinuation {
-                continuation.finish(throwing: error)
-            }
+            dataContinuation.finish(throwing: error)
         }
     }
 
@@ -157,19 +155,17 @@ private final class ParsingSessionDelegate<
             continuation.resume(throwing: error)
         }
 
-        if let continuation = self.dataContinuation {
-            if let error {
-                continuation.finish(throwing: error)
-            } else {
-                do {
-                    if let parser {
-                        try parser.finish()
-                    }
-
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
+        if let error {
+            dataContinuation.finish(throwing: error)
+        } else {
+            do {
+                if let parser {
+                    try parser.finish()
                 }
+
+                dataContinuation.finish()
+            } catch {
+                dataContinuation.finish(throwing: error)
             }
         }
 
@@ -185,32 +181,25 @@ private final class ParsingSessionDelegate<
     }
 
     private func makePushParser() -> PushParser {
-        PushParser(
+        let dataContinuation = self.dataContinuation
+        var elementStack = self.elementStack
+
+        return PushParser(
             for: response?.suggestedFilename,
 
             startDocument: {
-                self.dataContinuation?.yield(.beginDocument)
+                dataContinuation.yield(.beginDocument)
             }, endDocument: {
-                self.dataContinuation?.yield(.endDocument)
+                dataContinuation.yield(.endDocument)
             }, startElement: { elementName, attributes in
-                let element = Element(
-                    element: elementName,
-                    attributes: attributes
-                )
-
-                self.elementStack.append(element)
-
-                self.dataContinuation?.yield(
-                    .begin(element, attributes: attributes)
-                )
+                let element = Element(element: elementName, attributes: attributes)
+                elementStack.append(element)
+                dataContinuation.yield(.begin(element, attributes: attributes))
             }, endElement: {
-                guard let element = self.elementStack.popLast() else {
-                    return // we rely on libxml2 always calling with matching start/end events
-                }
-
-                self.dataContinuation?.yield(.end(element))
+                guard let element = elementStack.popLast() else { return }
+                dataContinuation.yield(.end(element))
             }, characters: { string in
-                self.dataContinuation?.yield(.text(string))
+                dataContinuation.yield(.text(string))
             }
         )
     }
