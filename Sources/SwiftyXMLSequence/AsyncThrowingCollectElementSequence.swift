@@ -40,8 +40,8 @@ extension AsyncSequence {
     }
 }
 
-public struct AsyncThrowingCollectElementSequence<Base, T>: AsyncSequence
-    where Base: AsyncSequence,
+public struct AsyncThrowingCollectElementSequence<Base, T>: AsyncSequence & Sendable
+    where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
 {

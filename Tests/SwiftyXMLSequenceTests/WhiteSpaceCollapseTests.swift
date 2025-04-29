@@ -110,17 +110,6 @@ struct WhitespaceCollapseTest {
         #expect(text == expectedText)
     }
 
-    private func character(
-        for c: Character,
-        _ processing: WhitespaceProcessing
-    ) -> Character {
-        if processing == .collapse {
-            "·"
-        } else {
-            "₋"
-        }
-    }
-
     enum WhitespaceCollapseCase: ElementRepresentable, WhitespaceCollapsing {
         case `case`(id: String, expect: String)
         case html(HTMLElement)

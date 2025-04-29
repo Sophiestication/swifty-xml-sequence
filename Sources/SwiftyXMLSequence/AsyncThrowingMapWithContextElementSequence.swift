@@ -48,8 +48,10 @@ internal struct ParsingEventMappingContext <
     var mappedResult: Result
 }
 
-internal struct AsyncThrowingMapWithContextElementSequence<Base, T, Result>: AsyncSequence
-    where Base: AsyncSequence,
+internal struct AsyncThrowingMapWithContextElementSequence<
+    Base, T, Result
+>: AsyncSequence & Sendable
+    where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
 {

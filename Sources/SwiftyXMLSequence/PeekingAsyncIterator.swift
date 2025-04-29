@@ -24,32 +24,32 @@
 
 import Foundation
 
-extension AsyncSequence where Self: Sendable {
-    public func reduce<T: ElementRepresentable, Result: Sendable>(
-        _ initialResult: Result,
-        _ nextPartialResult: @Sendable @escaping (
-            _ partialResult: Result,
-            _ element: T,
-            _ attributes: Attributes,
-            _ sequence: AsyncThrowingElementSequence<Self, T>
-        ) throws -> Result
-    ) async rethrows -> Result
-        where Element == ParsingEvent<T>
-    {
-        var iterator = self.makeAsyncIterator()
-        var result = initialResult
+internal struct PeekingAsyncIterator<Base>: AsyncIteratorProtocol
+    where Base: AsyncIteratorProtocol
+{
+    public typealias Element = Base.Element
 
-        while let event = try await iterator.next() {
-            switch event {
-            case .begin(let element, let attributes):
-                let sequence = AsyncThrowingElementSequence(base: self)
-                result = try nextPartialResult(result, element, attributes, sequence)
-                _ = try await sequence.reduce(()) { _, _ in } // consume remaining
-            default:
-                break
-            }
+    private var base: Base
+    private var pending: Element? = nil
+
+    internal init(base: Base) {
+        self.base = base
+    }
+
+    public mutating func next() async throws -> Element? {
+        if let pending {
+            self.pending = nil
+            return pending
         }
 
-        return result
+        return try await base.next()
+    }
+
+    public mutating func peek() async throws -> Element? {
+        if pending == nil {
+            pending = try await base.next()
+        }
+
+        return pending
     }
 }

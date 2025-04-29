@@ -32,23 +32,6 @@ struct ElementMapReduceTest {
         case unexpectedElement
     }
 
-    struct Header {
-        var pageId = String()
-        var title = String()
-        var language = String()
-        var writingDirection = String()
-    }
-
-    struct Section: Identifiable {
-        var id: String
-        var content: String
-    }
-
-    enum PageElement {
-        case header(Header)
-        case section(id: String, content: String)
-    }
-
     private func makeEvents<Element: ElementRepresentable & Equatable & Sendable>(
         _ elementType: Element.Type = XMLElement.self,
         for filename: String
@@ -67,10 +50,10 @@ struct ElementMapReduceTest {
     }
 
     @Test func testMarkupDocument() async throws {
-        let elements = try await makeEvents(HTMLElement.self, for: "sample2")
+        let groups = try await makeEvents(HTMLElement.self, for: "sample2")
             .collect { element, _ in
                 return switch element {
-                case .head, .section:
+                case .head, .body, .section:
                     true
                 default:
                     false
@@ -92,55 +75,27 @@ struct ElementMapReduceTest {
 
                 return true
             }
-            .map {
-                print("\($0)")
-                return $0
-            }
-            .map { element, attributes, events in
-                return switch element {
-                case .head:
-                    try await header(for: events)
-                case .section:
-                    try await section(for: events, attributes)
-                default:
-                    throw Error.unexpectedElement
-                }
-            }
-
-        let array = try await Array(elements)
-
-        #expect(array.count == 2)
-    }
-
-    private func header<S>(for events: S) async throws -> PageElement
-        where S: AsyncSequence,
-              S.Element == ParsingEvent<HTMLElement>
-    {
-//        let header = try await events.reduce(Header()) { partialResult, event in
-//            partialResult
-//        }
-
-        return .header(Header())
-    }
-
-    private func section<S>(for events: S, _ attributes: Attributes) async throws -> PageElement
-        where S: AsyncSequence,
-              S.Element == ParsingEvent<HTMLElement>
-    {
-        let text = try await events.map(whitespace: { element, attributes in
+            .map(whitespace: { element, attributes in
                 element.whitespacePolicy
             })
             .collapse()
-            .reduce(into: String()) { partialResult, event in
-                switch event {
-                case .text(let string):
-                    partialResult.append(string)
-                    break
+            .chunked { element, attributes in
+                return switch element {
+                case .head, .section:
+                    element
                 default:
-                    break
+                    nil
                 }
             }
+            .map {
+                return $0.0
+            }
 
-        return .section(id: attributes["data-mw-section-id"]!, content: text)
+        let expectedGroups: [HTMLElement?] =
+            [ .head, nil ] +
+            Array(repeating: HTMLElement.section, count: 27) +
+            [ nil ]
+
+        #expect(try await Array(groups) == expectedGroups)
     }
 }

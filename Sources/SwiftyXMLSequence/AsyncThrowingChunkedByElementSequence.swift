@@ -25,22 +25,22 @@
 import Foundation
 
 extension AsyncSequence {
-    public func filter<T: ElementRepresentable>(
-        _ isIncluded: @Sendable @escaping (
+    public func chunked<T: ElementRepresentable, Group>(
+        by matchingElement: @Sendable @escaping (
             _ element: T,
             _ attributes: Attributes
-        ) throws -> Bool
-    ) async rethrows -> AsyncThrowingFilterElementSequence<Self, T>
+        ) throws -> Group?
+    ) async rethrows -> AsyncThrowingChunkedByElementSequence<Self, T, Group>
         where Element == ParsingEvent<T>
     {
-        return AsyncThrowingFilterElementSequence(
+        return AsyncThrowingChunkedByElementSequence(
             base: self,
-            predicate: isIncluded
+            predicate: matchingElement
         )
     }
 }
 
-public struct AsyncThrowingFilterElementSequence<Base, T>: AsyncSequence & Sendable
+public struct AsyncThrowingChunkedByElementSequence<Base, T, Group>: AsyncSequence & Sendable
     where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
@@ -50,7 +50,7 @@ public struct AsyncThrowingFilterElementSequence<Base, T>: AsyncSequence & Senda
     internal typealias Predicate = @Sendable (
         _ element: T,
         _ attributes: Attributes
-    ) throws -> Bool
+    ) throws -> Group?
 
     private let predicate: Predicate
 
@@ -64,44 +64,76 @@ public struct AsyncThrowingFilterElementSequence<Base, T>: AsyncSequence & Senda
     }
 
     public struct Iterator: AsyncIteratorProtocol {
-        public typealias Element = ParsingEvent<T>
+        public typealias Element = (Group?, [Base.Element])
+        private typealias Event = Base.Element
 
-        private var base: Base.AsyncIterator
+        private var base: PeekingAsyncIterator<Base.AsyncIterator>
         private let predicate: Predicate
 
+        private var pending: Element? = nil
+
         internal init(_ base: Base.AsyncIterator, predicate: @escaping Predicate) {
-            self.base = base
+            self.base = PeekingAsyncIterator(base: base)
             self.predicate = predicate
         }
 
         public mutating func next() async throws -> Element? {
-            var depth = 0
+            if let pending {
+                self.pending = nil
+                return pending
+            }
 
-            while let nextEvent = try await base.next() {
-                if depth == 0 {
-                    if case .begin(let element, let attributes) = nextEvent {
-                        if try predicate(element, attributes) == false {
-                            depth = 1
-                            continue
+            var chunk: [Event] = []
+
+            while let event = try await base.peek() {
+                if case .begin(let element, let attributes) = event {
+                    let group = try predicate(element, attributes)
+
+                    if group != nil {
+                        let element = try await nextElement()
+
+                        if chunk.isEmpty {
+                            return (group, element)
+                        } else {
+                            pending = (group, element)
+                            return (nil, chunk)
                         }
                     }
+                }
 
-                    return nextEvent
-                } else {
-                    switch nextEvent {
-                    case .begin(_, attributes: _):
-                        depth += 1
-                        break
-                    case .end(_):
-                        depth -= 1
-                        break
-                    default:
-                        break
+                _ = try await base.next()
+                chunk.append(event)
+            }
+
+            if chunk.isEmpty {
+                return nil
+            }
+
+            return (nil, chunk)
+        }
+
+        private mutating func nextElement() async throws -> [Event] {
+            var element: [Event] = []
+            var depth = 0
+
+            while let event = try await base.next() {
+                element.append(event)
+
+                switch event {
+                case .begin(_, attributes: _):
+                    depth += 1
+                case .end(_):
+                    depth -= 1
+
+                    if depth <= 0 {
+                        return element
                     }
+                default:
+                    break
                 }
             }
 
-            return nil
+            return element
         }
     }
 }

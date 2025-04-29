@@ -72,14 +72,16 @@ struct HTMLTest {
 
         let text = try await events.collect { element, attributes in
             attributes["id"] == elementId
-        }.filter { element, attributes in
+        }
+        .filter { element, attributes in
             return switch element {
             case .figure, .style:
                 false
             default:
                 true
             }
-        }.reduce(String()) { partialResult, event in
+        }
+        .reduce(String()) { partialResult, event in
             return switch event {
             case .text(let string):
                 partialResult.appending(string)

@@ -69,23 +69,23 @@ struct LinebreakTest {
 
     @Test func testMarkupDocument() async throws {
         let text = try await makeEvents(HTMLElement.self, for: "sample1")
-            .collect({ element, attributes in
+            .collect { element, attributes in
                 return switch element {
                 case .title, .section:
                     true
                 default:
                     false
                 }
-            })
-            .filter({ element, _ in
+            }
+            .filter { element, _ in
                 return switch element {
                 case .figure, .style:
                     false
                 default:
                     true
                 }
-            })
-            .filter({ element, attributes in
+            }
+            .filter { element, attributes in
                 if attributes.contains(class: "noprint") { return false }
                 if attributes.contains(class: "mw-ref") { return false }
                 if attributes.contains(class: "reflist") { return false }
@@ -96,7 +96,7 @@ struct LinebreakTest {
                 }
 
                 return true
-            })
+            }
             .map(whitespace: { element, _ in
                 element.whitespacePolicy
             })
@@ -109,7 +109,7 @@ struct LinebreakTest {
                 }
             })
             .collapse()
-            .flatMap({ event in
+            .flatMap { event in
                 switch event {
                 case .begin(let element, _):
                     switch element {
@@ -123,7 +123,7 @@ struct LinebreakTest {
                 }
 
                 return [event].async
-            })
+            }
             .reduce(into: String()) { partialResult, event in
                 switch event {
                 case .text(let string):
