@@ -180,7 +180,7 @@ public enum HTMLElement: ElementRepresentable {
 extension HTMLElement: WhitespaceCollapsing {
     public var whitespacePolicy: WhitespacePolicy {
         return switch self {
-        case .wbr, .span, .a, .b, .i, .u, .strong, .small, .mark,
+        case .wbr, .span, .a, .link, .b, .i, .u, .strong, .small, .mark,
              .abbr, .cite, .q, .code, .sup, .sub, .time, .kbd, .samp, .var,
              .ruby, .rt, .rp, .bdi, .bdo, .img, .button, .label,
              .input, .select, .option, .optgroup,
