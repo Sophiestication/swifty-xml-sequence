@@ -24,7 +24,7 @@
 
 import Foundation
 
-public enum LinebreakParsingEvent<Element>: Equatable
+public enum LinebreakParsingEvent<Element>: Equatable, Sendable
     where Element: ElementRepresentable
 {
     case event(ParsingEvent<Element>, WhitespacePolicy)
