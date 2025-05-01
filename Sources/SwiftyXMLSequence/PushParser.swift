@@ -26,6 +26,12 @@ import Foundation
 @preconcurrency import libxml2
 
 internal final class PushParser {
+    enum Options {
+        case xml
+        case html
+    }
+
+    private let options: Options
     private var parserContext: xmlParserCtxtPtr? = nil
     private let suggestedFilename: UnsafePointer<CChar>?
 
@@ -38,7 +44,9 @@ internal final class PushParser {
     private var characters: ((_ string: String) -> Void)
 
     init(
-        for filename: String?,
+        options: Options,
+
+        filename: String?,
 
         startDocument: (@escaping () -> Void),
         endDocument: (@escaping () -> Void),
@@ -48,6 +56,8 @@ internal final class PushParser {
 
         characters: (@escaping (_ string: String) -> Void)
     ) {
+        self.options = options
+
         self.suggestedFilename = Self.suggestedFilename(for: filename)
 
         self.startDocument = startDocument
@@ -94,26 +104,47 @@ internal final class PushParser {
                 .toOpaque()
 
             var handler = xmlSAXHandler()
+
             handler.startDocument = startDocumentSAX
             handler.endDocument = endDocumentSAX
+
             handler.startElement = startElementSAX
             handler.endElement = endElementSAX
+
             handler.characters = charactersSAX
 
-            self.parserContext = xmlCreatePushParserCtxt(
-                &handler,
-                context,
-                nil,
-                0,
-                self.suggestedFilename
-            )
+            switch options {
+            case .xml:
+                self.parserContext = xmlCreatePushParserCtxt(
+                    &handler,
+                    context,
+                    nil,
+                    0,
+                    self.suggestedFilename
+                )
 
-            let options =
-                Int32(XML_PARSE_NOBLANKS.rawValue) |
-                Int32(XML_PARSE_NONET.rawValue) |
-                Int32(XML_PARSE_COMPACT.rawValue) |
-                Int32(XML_PARSE_NOENT.rawValue)
-            xmlCtxtUseOptions(self.parserContext, options)
+                xmlCtxtUseOptions(
+                    self.parserContext,
+                    Int32(XML_PARSE_NONET.rawValue) |
+                    Int32(XML_PARSE_NOENT.rawValue) |
+                    Int32(XML_PARSE_HUGE.rawValue)
+                )
+
+            case .html:
+                self.parserContext = htmlCreatePushParserCtxt(
+                    &handler,
+                    context,
+                    nil,
+                    0,
+                    self.suggestedFilename,
+                    XML_CHAR_ENCODING_NONE
+                )
+
+                htmlCtxtUseOptions(
+                    self.parserContext,
+                    Int32(HTML_PARSE_NONET.rawValue)
+                )
+            }
 
             return self.parserContext!
         }

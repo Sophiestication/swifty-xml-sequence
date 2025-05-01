@@ -185,7 +185,9 @@ private final class ParsingSessionDelegate<
         var elementStack = self.elementStack
 
         return PushParser(
-            for: response?.suggestedFilename,
+            options: .xml,
+
+            filename: response?.suggestedFilename,
 
             startDocument: {
                 dataContinuation.yield(.beginDocument)
