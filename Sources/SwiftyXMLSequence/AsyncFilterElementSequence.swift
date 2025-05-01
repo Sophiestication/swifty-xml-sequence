@@ -40,7 +40,7 @@ extension AsyncSequence {
     }
 }
 
-public struct AsyncFilterElementSequence<Base, T>: AsyncSequence & Sendable
+public struct AsyncFilterElementSequence<Base, T>: AsyncSequence, Sendable
     where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable

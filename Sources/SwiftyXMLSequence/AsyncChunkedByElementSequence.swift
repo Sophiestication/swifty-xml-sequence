@@ -40,7 +40,7 @@ extension AsyncSequence {
     }
 }
 
-public struct AsyncChunkedByElementSequence<Base, T, Group>: AsyncSequence & Sendable
+public struct AsyncChunkedByElementSequence<Base, T, Group>: AsyncSequence, Sendable
     where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable

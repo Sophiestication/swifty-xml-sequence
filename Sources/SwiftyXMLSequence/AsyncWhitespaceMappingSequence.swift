@@ -39,7 +39,7 @@ extension AsyncSequence {
     }
 }
 
-public struct AsyncWhitespaceMappingSequence<Base, T>: AsyncSequence & Sendable
+public struct AsyncWhitespaceMappingSequence<Base, T>: AsyncSequence, Sendable
     where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable

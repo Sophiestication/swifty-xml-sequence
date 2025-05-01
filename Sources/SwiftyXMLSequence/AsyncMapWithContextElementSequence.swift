@@ -50,7 +50,7 @@ internal struct ParsingEventMappingContext <
 
 internal struct AsyncMapWithContextElementSequence<
     Base, T, Result
->: AsyncSequence & Sendable
+>: AsyncSequence, Sendable
     where Base: AsyncSequence & Sendable,
           Base.Element == ParsingEvent<T>,
           T: ElementRepresentable
