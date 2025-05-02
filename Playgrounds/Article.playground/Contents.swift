@@ -93,7 +93,7 @@ Task {
                         .fontDesign(.monospaced)
                         .padding()
                 }
-                .frame(width: 320.0)
+                .frame(width: 640.0)
             }
         }
 
