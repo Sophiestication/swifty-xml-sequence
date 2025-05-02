@@ -54,6 +54,7 @@ Task {
             }
             .filter { element, attributes in
                 if attributes.contains(class: "reference") { return false }
+                if attributes.contains(class: "navbox") { return false }
                 if attributes.contains(class: "mw-editsection") { return false }
                 if attributes.contains(class: "mw-cite-backlink") { return false }
 
