@@ -100,16 +100,14 @@ Task {
             for: Bundle.main.url(forResource: "trivia", withExtension: "xml")!
         )
 
-        actor ElementStack {
+        struct ElementStack {
             private var stack: [Element] = []
 
-            func push(_ element: Element) { stack.append(element) }
-            func pop() { stack.removeLast() }
+            mutating func push(_ element: Element) { stack.append(element) }
+            mutating func pop() { stack.removeLast() }
 
             var style: AttributeContainer { stack.last?.style ?? AttributeContainer() }
         }
-
-        let elementStack = ElementStack()
 
         let attributedString = try await events.map(whitespace: { element, attributes in
             return switch element {
@@ -120,10 +118,10 @@ Task {
             }
         })
         .collapse()
-        .compactMap { (event) -> AttributedString? in
+        .map(with: ElementStack(), { stack, event in
             switch event {
             case .begin(let element, let attributes):
-                await elementStack.push(element)
+                stack.push(element)
 
                 return switch element {
                 case .answer(let correct):
@@ -135,7 +133,7 @@ Task {
                 }
 
             case .end(let element):
-                await elementStack.pop()
+                stack.pop()
 
                 return switch element {
                 case .answer(_):
@@ -147,12 +145,16 @@ Task {
                 }
 
             case .text(let string):
-                return await AttributedString(string, attributes: elementStack.style)
+                return AttributedString(string, attributes: stack.style)
 
             default:
                 return nil
             }
-        }.reduce(AttributedString()) { @Sendable result, attributedString in
+        })
+        .compactMap {
+            $0
+        }
+        .reduce(AttributedString()) { @Sendable result, attributedString in
             result + attributedString
         }
 
