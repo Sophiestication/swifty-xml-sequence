@@ -36,17 +36,9 @@ Task {
         )
 
         let text = try await events
-            .collect { element, attributes in
-                return switch element {
-                case .title, .h1, .h2, .h3, .h4, .h5, .h6, .p, .ul, .ol, .li:
-                    true
-                default:
-                    false
-                }
-            }
             .filter { element, attributes in
                 return switch element {
-                case .style, .link:
+                case .style, .link, .table:
                     false
                 default:
                     true
@@ -54,11 +46,21 @@ Task {
             }
             .filter { element, attributes in
                 if attributes.contains(class: "reference") { return false }
+                if attributes.contains(class: "gallery") { return false }
+                if attributes.contains(class: "infobox") { return false }
                 if attributes.contains(class: "navbox") { return false }
                 if attributes.contains(class: "mw-editsection") { return false }
                 if attributes.contains(class: "mw-cite-backlink") { return false }
 
                 return true
+            }
+            .collect { element, attributes in
+                return switch element {
+                case .title, .h1, .h2, .h3, .h4, .h5, .h6, .p, .ul, .ol, .li:
+                    true
+                default:
+                    false
+                }
             }
             .map(whitespace: { element, _ in
                 element.whitespacePolicy
@@ -72,6 +74,21 @@ Task {
                 }
             })
             .collapse()
+            .flatMap { event in
+                switch event {
+                case .begin(let element, _):
+                    switch element {
+                    case .li:
+                        return [.text("- ") , event].async
+                    default:
+                        break
+                    }
+                default:
+                    break
+                }
+
+                return [event].async
+            }
             .reduce(into: String()) { @Sendable partialResult, event in
                 switch event {
                 case .text(let string):
