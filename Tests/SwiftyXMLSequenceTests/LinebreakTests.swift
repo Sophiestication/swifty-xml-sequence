@@ -86,12 +86,12 @@ struct LinebreakTest {
                 }
             }
             .filter { element, attributes in
-                if attributes.contains(class: "noprint") { return false }
-                if attributes.contains(class: "mw-ref") { return false }
-                if attributes.contains(class: "reflist") { return false }
-                if attributes.contains(class: "navigation-not-searchable") { return false }
+                if attributes.class.contains("noprint") { return false }
+                if attributes.class.contains("mw-ref") { return false }
+                if attributes.class.contains("reflist") { return false }
+                if attributes.class.contains("navigation-not-searchable") { return false }
 
-                if attributes.contains(id: ["mw6Q", "mw7A", "mwAUU", "mwAWI"]) {
+                if ["mw6Q", "mw7A", "mwAUU", "mwAWI"].contains(attributes.id) {
                     return false
                 }
 

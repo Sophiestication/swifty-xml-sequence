@@ -115,7 +115,7 @@ struct WhitespaceCollapseTest {
         case html(HTMLElement)
 
         init(element: String, attributes: Attributes) {
-            if attributes.contains(class: "case") {
+            if attributes.class.contains("case") {
                 self = .case(id: attributes["id"]!, expect: attributes["expect"]!)
             } else {
                 self = .html(HTMLElement(element: element, attributes: attributes))

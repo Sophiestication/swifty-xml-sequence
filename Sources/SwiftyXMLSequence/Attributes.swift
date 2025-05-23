@@ -24,30 +24,53 @@
 
 import Foundation
 
-public typealias Attributes = Dictionary<String, String>
+@dynamicMemberLookup
+public struct Attributes: Equatable, Sendable, Collection {
+    fileprivate let storage: [String: String]
 
-public extension Attributes {
-    func contains(`class` name: String) -> Bool {
-        guard let value = self.first(
-            where: { $0.key.caseInsensitiveCompare("class") == .orderedSame }
-        )?.value else {
-            return false
-        }
+    public typealias Element = (key: String, value: String)
+    public typealias Index = Dictionary<String, String>.Index
 
-        return value
-            .split(whereSeparator: \.isWhitespace)
-            .contains { $0.caseInsensitiveCompare(name) == .orderedSame }
+    public init(_ dictionary: [String: String]) {
+        self.storage = dictionary
+    }
+
+    public subscript(dynamicMember key: String) -> String? {
+        return self[key]
+    }
+
+    public subscript(key: String) -> String? {
+        return storage.first { $0.key.caseInsensitiveCompare(key) == .orderedSame }?.value
+    }
+
+    public var startIndex: Index { storage.startIndex }
+    public var endIndex: Index { storage.endIndex }
+
+    public func index(after i: Index) -> Index {
+        storage.index(after: i)
+    }
+
+    public subscript(position: Index) -> Element {
+        storage[position]
     }
 }
 
-public extension Attributes {
-    func contains(id identifiers: Set<String>) -> Bool {
-        guard let value = self.first(
-            where: { $0.key.caseInsensitiveCompare("id") == .orderedSame }
-        )?.value else {
-            return false
-        }
+extension Attributes: Identifiable {
+    public typealias ID = String?
+    public var id: ID { storage["id"] }
+}
 
-        return identifiers.contains(value)
+extension Attributes {
+    public var `class`: some Collection<Substring> {
+        return (storage["class"] ?? String()).matches(of: /\S+/).lazy.map(\.output) // 🕶️
+    }
+}
+
+public extension Dictionary
+    where Key == String,
+          Value == String
+{
+    init(_ attributes: Attributes) {
+        self = attributes.storage
     }
 }

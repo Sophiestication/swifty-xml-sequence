@@ -107,7 +107,7 @@ struct FilterAndCollectTests {
                 false
             }
         }.filter { element, attributes in
-            attributes.contains(id: ["mwqA"])
+            attributes.id == "mwqA"
         }.reduce(String()) { partialResult, event in
             return switch event {
             case .text(let string):
@@ -130,7 +130,7 @@ struct FilterAndCollectTests {
                     false
                 }
             }.filter { element, attributes in
-                attributes.contains(id: ["mwqA"])
+                attributes.id == "mwqA"
             }.reduce(String()) { partialResult, event in
                 return switch event {
                 case .text(let string):

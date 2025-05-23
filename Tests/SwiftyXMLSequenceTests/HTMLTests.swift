@@ -161,7 +161,7 @@ struct HTMLTest {
         let text = try await events.collect { element, attributes in
             attributes["id"] == "mwRg"
         }.filter { element, attributes in
-           if attributes.contains(class: "mw-ref") {
+            if attributes.class.contains("mw-ref") {
                 return false
             }
 

@@ -179,7 +179,7 @@ internal final class PushParser {
         }
 
         let elementName = String(cString: name)
-        var attributeDict = Attributes()
+        var attributeDict = Dictionary<String, String>()
 
         if let attributes = attributes {
             var i = 0
@@ -196,7 +196,7 @@ internal final class PushParser {
             }
         }
 
-        parser.startElement(elementName, attributeDict)
+        parser.startElement(elementName, Attributes(attributeDict))
     }
 
     private let endElementSAX: endElementSAXFunc = { context, name in

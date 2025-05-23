@@ -196,14 +196,15 @@ final class XMLEventTests: XCTestCase {
             qualifiedName qName: String?,
             attributes attributeDict: [String : String]
         ) {
+            let attributes = Attributes(attributeDict)
             let element = XMLElement(
                 element: elementName,
-                attributes: attributeDict
+                attributes: attributes
             )
 
             elementStack.append(element)
 
-            yield(.begin(element, attributes: attributeDict))
+            yield(.begin(element, attributes: attributes))
         }
 
         func parser(

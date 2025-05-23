@@ -68,10 +68,10 @@ struct ChunkByElementTests {
                 }
             }
             .filter { element, attributes in
-                if attributes.contains(class: "noprint") { return false }
-                if attributes.contains(class: "mw-ref") { return false }
-                if attributes.contains(class: "reflist") { return false }
-                if attributes.contains(class: "navigation-not-searchable") { return false }
+                if attributes.class.contains("noprint") { return false }
+                if attributes.class.contains("mw-ref") { return false }
+                if attributes.class.contains("reflist") { return false }
+                if attributes.class.contains("navigation-not-searchable") { return false }
 
                 return true
             }
