@@ -31,7 +31,7 @@ public struct Attributes: Equatable, Sendable, Collection {
     public typealias Element = (key: String, value: String)
     public typealias Index = Dictionary<String, String>.Index
 
-    public init(_ dictionary: [String: String]) {
+    public init(_ dictionary: [String:String]) {
         self.storage = dictionary
     }
 
@@ -62,7 +62,7 @@ extension Attributes: Identifiable {
 
 extension Attributes {
     public var `class`: some Collection<Substring> {
-        return (storage["class"] ?? String()).matches(of: /\S+/).lazy.map(\.output) // 🕶️
+        (storage["class"] ?? String()).matches(of: /\S+/).lazy.map(\.output) // 🕶️
     }
 }
 
