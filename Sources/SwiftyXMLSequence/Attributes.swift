@@ -26,10 +26,10 @@ import Foundation
 
 @dynamicMemberLookup
 public struct Attributes: Equatable, Sendable, Collection {
-    fileprivate let storage: [String: String]
+    fileprivate let storage: [String:String]
 
     public typealias Element = (key: String, value: String)
-    public typealias Index = Dictionary<String, String>.Index
+    public typealias Index = [String:String].Index
 
     public init(_ dictionary: [String:String]) {
         self.storage = dictionary

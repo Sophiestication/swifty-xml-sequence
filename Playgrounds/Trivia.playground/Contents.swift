@@ -28,7 +28,7 @@ import SwiftyXMLSequence
 
 PlaygroundPage.current.needsIndefiniteExecution = true
 
-func bool(from attributes: [String:String]) -> Bool {
+func bool(from attributes: Attributes) -> Bool {
     guard let string = attributes["correct"] else {
         return false
     }
@@ -40,7 +40,7 @@ func bool(from attributes: [String:String]) -> Bool {
     return value
 }
 
-func url(from attributes: [String:String]) -> URL? {
+func url(from attributes: Attributes) -> URL? {
     guard let string = attributes["reference"] else {
         return nil
     }
@@ -55,7 +55,7 @@ enum Element: ElementRepresentable, Equatable {
     case explaination(reference: URL?)
     case custom(String)
 
-    init(element elementName: String, attributes: [String:String]) {
+    init(element elementName: String, attributes: Attributes) {
         switch elementName.lowercased() {
         case "trivia":
             self = .trivia
