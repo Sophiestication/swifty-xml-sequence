@@ -45,12 +45,12 @@ Task {
                 }
             }
             .filter { element, attributes in
-                if attributes.contains(class: "reference") { return false }
-                if attributes.contains(class: "gallery") { return false }
-                if attributes.contains(class: "infobox") { return false }
-                if attributes.contains(class: "navbox") { return false }
-                if attributes.contains(class: "mw-editsection") { return false }
-                if attributes.contains(class: "mw-cite-backlink") { return false }
+                if attributes.class.contains("reference") { return false }
+                if attributes.class.contains("gallery") { return false }
+                if attributes.class.contains("infobox") { return false }
+                if attributes.class.contains("navbox") { return false }
+                if attributes.class.contains("mw-editsection") { return false }
+                if attributes.class.contains("mw-cite-backlink") { return false }
 
                 return true
             }
