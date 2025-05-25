@@ -26,7 +26,8 @@ import Testing
 import Foundation
 @testable import SwiftyXMLSequence
 
-struct WhitespaceCollapseTest {
+@Suite("Whitespace Mapping")
+struct WhitespaceMappingTests {
     enum Error: Swift.Error {
         case fileNoSuchFile
     }
@@ -48,7 +49,7 @@ struct WhitespaceCollapseTest {
         return events
     }
 
-    @Test func testWhitespaceMapping() async throws {
+    @Test func mapping() async throws {
         let events = try await makeEvents(HTMLElement.self, for: "whitespace-collapse")
 
         let whitespaceEvents = try await events.map(whitespace: { element, attributes in
@@ -63,7 +64,7 @@ struct WhitespaceCollapseTest {
         #expect(debugDescription == expectedText)
     }
 
-    @Test func testWhitespaceCollapsing() async throws {
+    @Test func collapsing() async throws {
         let events = try await makeEvents(HTMLElement.self, for: "whitespace-collapse")
 
         let collapsedEvents = try await events.map(whitespace: { element, attributes in
@@ -78,7 +79,7 @@ struct WhitespaceCollapseTest {
         #expect(debugDescription == expectedText)
     }
 
-    @Test func testWhitespacePreserving() async throws {
+    @Test func preserving() async throws {
         typealias Event = ParsingEvent<HTMLElement>
         typealias WhitespaceEvent = WhitespaceParsingEvent<HTMLElement>
 
@@ -130,84 +131,84 @@ struct WhitespaceCollapseTest {
         }
     }
 
-    @Test func testMultipleSpacesWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func multipleSpaces() async throws {
+        try await runCase(
             named: "test-multiple-spaces",
             result: "Hello world!"
         )
     }
 
-    @Test func testLeadingTrailingWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func leadingTrailing() async throws {
+        try await runCase(
             named: "test-leading-trailing",
             result: "Hello world!"
         )
     }
 
-    @Test func testAfterBlockWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func afterBlock() async throws {
+        try await runCase(
             named: "test-after-block",
             result: "HelloWorld"
         )
     }
 
-    @Test func testInlineFollowWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func inlineFollow() async throws {
+        try await runCase(
             named: "test-inline-follow",
             result: "Hello World"
         )
     }
 
-    @Test func testInlineStartWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func inlineStart() async throws {
+        try await runCase(
             named: "test-inline-start",
             result: "Hello World"
         )
     }
 
-    @Test func testInlineSpaceWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func inlineSpace() async throws {
+        try await runCase(
             named: "test-inline-space",
             result: "Hello World"
         )
     }
 
-    @Test func testBeforeLeadingInlineWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func beforeLeadingInline() async throws {
+        try await runCase(
             named: "test-before-leading-inline",
             result: "Hello World"
         )
     }
 
-    @Test func testBeforeLeadingBlockWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func beforeLeadingBlock() async throws {
+        try await runCase(
             named: "test-before-leading-block",
             result: "HelloWorld"
         )
     }
 
-    @Test func testLineBreakWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func lineBreak() async throws {
+        try await runCase(
             named: "test-br",
             result: "HelloWorld"
         )
     }
 
-    @Test func testBetweenInlineWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func betweenInline() async throws {
+        try await runCase(
             named: "test-between-inline",
             result: "Hello World"
         )
     }
 
-    @Test func testInlineSequenceWhitespaceCollapse() async throws {
-        try await testWhitespaceCollapseCase(
+    @Test func inlineSequence() async throws {
+        try await runCase(
             named: "test-inline-sequence",
             result: "First Second Third"
         )
     }
 
-    private func testWhitespaceCollapseCase(named: String, result: String) async throws {
+    private func runCase(named: String, result: String) async throws {
         let string = try await makeEvents(
             WhitespaceCollapseCase.self,
             for: "whitespace-collapse-cases"

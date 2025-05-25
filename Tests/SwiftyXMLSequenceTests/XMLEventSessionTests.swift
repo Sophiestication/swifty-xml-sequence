@@ -26,12 +26,13 @@ import Testing
 import Foundation
 @testable import SwiftyXMLSequence
 
+@Suite("URL Session")
 final class XMLEventSessionTests: NSObject, URLSessionDataDelegate, @unchecked Sendable {
     private var receivedDidCompleteWithError = false
     private var receivedDidReceiveResponse = false
     private var receivedDidReceiveData = false
 
-    @Test func testURLSessionDelegate() async throws {
+    @Test func receiveDelegateCalls() async throws {
         let filename = "sample1"
 
         guard let fileURL = Bundle.module.url(forResource: filename, withExtension: "html") else {

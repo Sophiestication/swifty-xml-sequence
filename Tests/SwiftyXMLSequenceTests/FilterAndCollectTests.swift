@@ -27,6 +27,7 @@ import Foundation
 import AsyncAlgorithms
 @testable import SwiftyXMLSequence
 
+@Suite("XML Element")
 struct FilterAndCollectTests {
     enum Error: Swift.Error {
         case fileNoSuchFile
@@ -49,7 +50,7 @@ struct FilterAndCollectTests {
         return events
     }
 
-    @Test func testCollectTitle() async throws {
+    @Test func collectTitle() async throws {
         let events = try await Array(
             try await makeEvents(HTMLElement.self, for: "sample1")
         )
@@ -73,7 +74,7 @@ struct FilterAndCollectTests {
         #expect(title == "Der Blaue Reiter")
     }
 
-    @Test func testAsyncCollectTitle() async throws {
+    @Test func asyncCollectTitle() async throws {
         let title = try await makeEvents(HTMLElement.self, for: "sample1")
             .collect { element, attributes in
                 return switch element {
@@ -94,7 +95,7 @@ struct FilterAndCollectTests {
         #expect(title == "Der Blaue Reiter")
     }
 
-    @Test func testFilterSection() async throws {
+    @Test func filterSection() async throws {
         let events = try await Array(
             try await makeEvents(HTMLElement.self, for: "sample1")
         )
@@ -120,7 +121,7 @@ struct FilterAndCollectTests {
         #expect(listItem == "Kandinsky's \"On Stage Composition\"")
     }
 
-    @Test func testAsyncFilterSection() async throws {
+    @Test func asyncFilterSection() async throws {
         let listItem = try await makeEvents(HTMLElement.self, for: "sample1")
             .collect { element, attributes in
                 return switch element {

@@ -22,28 +22,28 @@
 // SOFTWARE.
 //
 
-import XCTest
+import Testing
+import Foundation
 @testable import SwiftyXMLSequence
 
-final class XMLEventTests: XCTestCase {
+@Suite("Parsing Event")
+final class XMLEventTests {
     typealias XMLElement = SwiftyXMLSequence.XMLElement
     typealias XMLParsingEvent = ParsingEvent<XMLElement>
 
     var session: URLSession!
     var triviaFileURL: URL!
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
-
+    init() throws {
         session = URLSession(configuration: .default)
 
         guard let fileURL = Bundle.module.url(forResource: "trivia", withExtension: "xml") else {
-            throw XCTSkip("Failed to find trivia.xml file. Skipping all tests.")
+            #expect(Bool(false), "Failed to find trivia.xml file."); return
         }
         triviaFileURL = fileURL
     }
 
-    func testParseTrivia() async {
+    @Test func parseTriviaDocument() async {
         await tryAndFailIfNeeded {
             let (events, _) = try await session.xml(for: triviaFileURL)
 
@@ -51,7 +51,7 @@ final class XMLEventTests: XCTestCase {
 
             guard let document = nodes.first,
                   case .document(_) = document else {
-                XCTFail("The parsed document has no child nodes.")
+                #expect(Bool(false), "The parsed document has no child nodes.")
                 return
             }
         }
@@ -63,7 +63,7 @@ final class XMLEventTests: XCTestCase {
             let events2 = makeXMLParserStream(for: triviaFileURL)
 
             let equalSequences = await isEqual(events, events2)
-            XCTAssertTrue(equalSequences)
+            #expect(equalSequences == true)
         }
     }
 
@@ -145,9 +145,9 @@ final class XMLEventTests: XCTestCase {
         do {
             try await action()
         } catch let error as ParsingError {
-            XCTFail("Line \(error.line); Column \(error.column): \(error.message)")
+            #expect(Bool(false), "Line \(error.line); Column \(error.column): \(error.message)")
         } catch {
-            XCTFail("Error occurred: \(error)")
+            #expect(Bool(false), "Error occurred: \(error)")
         }
     }
 

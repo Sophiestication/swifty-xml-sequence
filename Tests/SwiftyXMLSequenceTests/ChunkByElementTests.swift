@@ -26,6 +26,7 @@ import Testing
 import Foundation
 @testable import SwiftyXMLSequence
 
+@Suite("XML Element")
 struct ChunkByElementTests {
     enum Error: Swift.Error {
         case fileNoSuchFile
@@ -49,7 +50,7 @@ struct ChunkByElementTests {
         return events
     }
 
-    @Test func testMarkupDocument() async throws {
+    @Test func chunkByHeadAndSection() async throws {
         let groups = try await makeEvents(HTMLElement.self, for: "sample2")
             .collect { element, _ in
                 return switch element {

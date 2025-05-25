@@ -26,6 +26,7 @@ import Testing
 import Foundation
 @testable import SwiftyXMLSequence
 
+@Suite("Whitespace Mapping")
 struct LinebreakTest {
     enum Error: Swift.Error {
         case fileNoSuchFile
@@ -48,7 +49,7 @@ struct LinebreakTest {
         return events
     }
 
-    @Test func testLinebreakMapping() async throws {
+    @Test func linebreakMapping() async throws {
         let events = try await makeEvents(HTMLElement.self, for: "whitespace-collapse")
 
         let whitespaceEvents = try await events
@@ -67,7 +68,7 @@ struct LinebreakTest {
         #expect(debugDescription == expectedText)
     }
 
-    @Test func testMarkupDocument() async throws {
+    @Test func checkTextRepresentation() async throws {
         let text = try await makeEvents(HTMLElement.self, for: "sample1")
             .collect { element, attributes in
                 return switch element {

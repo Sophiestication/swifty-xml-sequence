@@ -26,7 +26,8 @@ import Testing
 import Foundation
 @testable import SwiftyXMLSequence
 
-struct HTMLTest {
+@Suite("HTML Element")
+struct HTMLTests {
     enum Error: Swift.Error {
         case fileNoSuchFile
     }
@@ -52,7 +53,7 @@ struct HTMLTest {
         try await makeEvents(HTMLElement.self, for: "sample1")
     }
 
-    @Test func testHTMLElementParsing() async throws {
+    @Test func HTMLElementParsing() async throws {
        let events = try await makeSample1Events()
 
         let sections = try await events.reduce(into: [HTMLElement]()) { result, event in
@@ -66,12 +67,12 @@ struct HTMLTest {
         #expect(sections.count > 0)
     }
 
-    @Test func testFilterElement() async throws {
+    @Test func filterElement() async throws {
         let elementId = "mwAQ"
         let events = try await makeSample1Events()
 
         let text = try await events.collect { element, attributes in
-            attributes["id"] == elementId
+            attributes.id == elementId
         }
         .filter { element, attributes in
             return switch element {
@@ -93,14 +94,14 @@ struct HTMLTest {
         #expect(text.count > 0)
     }
 
-    @Test func testParagraphText() async throws {
+    @Test func parseParagraphText() async throws {
         let events = try await makeSample1Events()
 
         let paragraph = events.drop(while: { event in
             if case .begin(let element, let attributes) = event,
                element == .p
             {
-                if attributes["id"] == "mwGQ" {
+                if attributes.id == "mwGQ" {
                     return false
                 }
             }
@@ -139,11 +140,11 @@ struct HTMLTest {
         #expect(text == expectedText)
     }
 
-    @Test func testElementMatching() async throws {
+    @Test func matchIdentifier() async throws {
         let events = try await makeSample1Events()
 
         let text = try await events.collect { element, attributes in
-            attributes["id"] == "mwGQ"
+            attributes.id == "mwGQ"
         }.reduce(into: String()) { partialResult, event in
             if case .text(let string) = event {
                 partialResult += string
@@ -155,11 +156,11 @@ struct HTMLTest {
         #expect(text == expectedText)
     }
 
-    @Test func testFollowingElementFiltering() async throws {
+    @Test func followingElementFiltering() async throws {
         let events = try await makeEvents(HTMLElement.self, for: "sample2")
 
         let text = try await events.collect { element, attributes in
-            attributes["id"] == "mwRg"
+            attributes.id == "mwRg"
         }.filter { element, attributes in
             if attributes.class.contains("mw-ref") {
                 return false
@@ -186,8 +187,8 @@ struct HTMLTest {
 
             switch html {
             case .figure:
-                if attributes["typeof"] == "mw:File/Thumb",
-                   let id = attributes["id"] {
+                if attributes.typeof == "mw:File/Thumb",
+                   let id = attributes.id {
                     self = .thumbnail(id: id)
                     return
                 }
@@ -200,7 +201,7 @@ struct HTMLTest {
         }
     }
 
-    @Test func testMatchThumbnails() async throws {
+    @Test func matchThumbnailElements() async throws {
         let events = try await makeEvents(MediaWikiElement.self, for: "sample1")
 
         var foundURLs = [URL]()
@@ -225,7 +226,7 @@ struct HTMLTest {
                    case .html(let htmlElement) = element,
                    case .img = htmlElement
                 {
-                    if let string = attributes["src"],
+                    if let string = attributes.src,
                        let url = URL(string: string) {
                         partialResult.append(url)
                     }
