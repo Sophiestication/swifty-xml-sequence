@@ -196,7 +196,7 @@ internal final class PushParser {
             }
         }
 
-        parser.startElement(elementName, Attributes(attributeDict))
+        parser.startElement(elementName, Attributes(rawValue: attributeDict))
     }
 
     private let endElementSAX: endElementSAXFunc = { context, name in

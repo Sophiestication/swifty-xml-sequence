@@ -196,7 +196,7 @@ final class XMLEventTests {
             qualifiedName qName: String?,
             attributes attributeDict: [String : String]
         ) {
-            let attributes = Attributes(attributeDict)
+            let attributes = Attributes(rawValue: attributeDict)
             let element = XMLElement(
                 element: elementName,
                 attributes: attributes

@@ -25,14 +25,14 @@
 import Foundation
 
 @dynamicMemberLookup
-public struct Attributes: Equatable, Sendable, Collection {
-    fileprivate let storage: [String:String]
+public struct Attributes: Equatable, Sendable, RawRepresentable {
+    public typealias Element = RawValue.Element
+    public typealias Index = RawValue.Index
 
-    public typealias Element = (key: String, value: String)
-    public typealias Index = [String:String].Index
+    public var rawValue: [String : String]
 
-    public init(_ dictionary: [String:String]) {
-        self.storage = dictionary
+    public init(rawValue: RawValue) {
+        self.rawValue = rawValue
     }
 
     public subscript(dynamicMember key: String) -> String? {
@@ -40,37 +40,30 @@ public struct Attributes: Equatable, Sendable, Collection {
     }
 
     public subscript(key: String) -> String? {
-        return storage.first { $0.key.caseInsensitiveCompare(key) == .orderedSame }?.value
+        return rawValue.first { $0.key.caseInsensitiveCompare(key) == .orderedSame }?.value
     }
+}
 
-    public var startIndex: Index { storage.startIndex }
-    public var endIndex: Index { storage.endIndex }
+extension Attributes: Collection {
+    public var startIndex: Index { rawValue.startIndex }
+    public var endIndex: Index { rawValue.endIndex }
 
     public func index(after i: Index) -> Index {
-        storage.index(after: i)
+        rawValue.index(after: i)
     }
 
     public subscript(position: Index) -> Element {
-        storage[position]
+        rawValue[position]
     }
 }
 
 extension Attributes: Identifiable {
     public typealias ID = String?
-    public var id: ID { storage["id"] }
+    public var id: ID { self["id"] }
 }
 
 extension Attributes {
     public var `class`: some Collection<Substring> {
         (self["class"] ?? String()).matches(of: /\S+/).lazy.map(\.output) // 🕶️
-    }
-}
-
-public extension Dictionary
-    where Key == String,
-          Value == String
-{
-    init(_ attributes: Attributes) {
-        self = attributes.storage
     }
 }
