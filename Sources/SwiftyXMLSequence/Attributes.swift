@@ -62,7 +62,7 @@ extension Attributes: Identifiable {
 
 extension Attributes {
     public var `class`: some Collection<Substring> {
-        (storage["class"] ?? String()).matches(of: /\S+/).lazy.map(\.output) // 🕶️
+        (self["class"] ?? String()).matches(of: /\S+/).lazy.map(\.output) // 🕶️
     }
 }
 
