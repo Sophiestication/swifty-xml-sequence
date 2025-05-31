@@ -238,4 +238,46 @@ struct HTMLTests {
 
         #expect(foundURLs.count == 5)
     }
+
+    @Test func parseAndCompareHTML() async throws {
+        await tryAndFailIfNeeded {
+            let data = "   <html>   <b>Hello</b>,   World!   </html>   ".data(using: .utf8)!
+
+            let text = try await data
+                .html()
+                .async
+                .map(whitespace: { element, _ in
+                    element.whitespacePolicy
+                })
+                .map(linebreaks: { element, _ in
+                    "\n"
+                })
+                .collapse()
+                .compactMap { event in
+                    return switch event {
+                    case .text(let string):
+                        string
+                    default:
+                        nil
+                    }
+                }
+                .reduce(String()) { partialResult, string in
+                    partialResult + string
+                }
+
+            let expectedText = "Hello, World!"
+
+            #expect(text == expectedText)
+        }
+    }
+
+    private func tryAndFailIfNeeded(_ action: () async throws -> Void) async {
+        do {
+            try await action()
+        } catch let error as ParsingError {
+            #expect(Bool(false), "Line \(error.line); Column \(error.column): \(error.message)")
+        } catch {
+            #expect(Bool(false), "Error occurred: \(error)")
+        }
+    }
 }

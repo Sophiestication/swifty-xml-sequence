@@ -43,23 +43,24 @@ final class XMLEventTests {
         triviaFileURL = fileURL
     }
 
-    @Test func parseTriviaDocument() async {
+    @Test func loadAndParseWithURLSession() async {
         await tryAndFailIfNeeded {
             let (events, _) = try await session.xml(for: triviaFileURL)
+            let events2 = makeXMLParserStream(for: triviaFileURL)
 
-            let nodes = try await parse(events)
-
-            guard let document = nodes.first,
-                  case .document(_) = document else {
-                #expect(Bool(false), "The parsed document has no child nodes.")
-                return
-            }
+            let equalSequences = await isEqual(events, events2)
+            #expect(equalSequences == true)
         }
     }
 
-    func testParseAndCompareTrivia() async {
+    @Test func loadAndParseData() async {
         await tryAndFailIfNeeded {
-            let (events, _) = try await session.xml(for: triviaFileURL)
+            let events = try Data(
+                    contentsOf: triviaFileURL,
+                    options: [.mappedIfSafe]
+                )
+                .xml(referencing: triviaFileURL)
+                .async
             let events2 = makeXMLParserStream(for: triviaFileURL)
 
             let equalSequences = await isEqual(events, events2)
@@ -90,55 +91,6 @@ final class XMLEventTests {
         }
 
         return true
-    }
-
-    private enum Node {
-        case document(children: [Node])
-        case element(
-            name: String,
-            attributes: Attributes,
-            children: [Node]
-        )
-        case text(String)
-    }
-
-    private func parse<S: AsyncSequence>(
-        _ events: S
-    ) async throws -> [Node] where S.Element == XMLParsingEvent {
-        var children = [Node]()
-
-        for try await event in events {
-            switch event {
-            case .beginDocument:
-                let document = Node.document(
-                    children: try await parse(events)
-                )
-                children.append(document)
-
-                break
-
-            case .begin(let element, let attributes):
-                let element = Node.element(
-                    name: element.name,
-                    attributes: attributes,
-                    children: try await parse(events)
-                )
-                children.append(element)
-
-                break
-
-            case .text(let string):
-                let text = Node.text(string)
-                children.append(text)
-
-                break
-
-            default:
-                break
-            }
-        }
-
-        return children
     }
 
     private func tryAndFailIfNeeded(_ action: () async throws -> Void) async {

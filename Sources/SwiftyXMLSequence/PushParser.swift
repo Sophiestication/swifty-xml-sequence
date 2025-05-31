@@ -142,7 +142,8 @@ internal final class PushParser {
 
                 htmlCtxtUseOptions(
                     self.parserContext,
-                    Int32(HTML_PARSE_NONET.rawValue)
+                    Int32(HTML_PARSE_NONET.rawValue) |
+                    Int32(HTML_PARSE_RECOVER.rawValue)
                 )
             }
 
@@ -181,7 +182,7 @@ internal final class PushParser {
         let elementName = String(cString: name)
         var attributeDict = Dictionary<String, String>()
 
-        if let attributes = attributes {
+        if let attributes {
             var i = 0
 
             while attributes[i] != nil {
@@ -211,7 +212,7 @@ internal final class PushParser {
 
     private let charactersSAX: charactersSAXFunc = { context, buffer, bufferSize in
         guard let parser = parser(from: context),
-              let buffer = buffer else {
+              let buffer else {
             return
         }
 
@@ -224,13 +225,14 @@ internal final class PushParser {
     }
 
     private static func parser(from context: UnsafeMutableRawPointer?) -> PushParser? {
-        guard let context = context else {
+        guard let context else {
             return nil
         }
 
         let parser = Unmanaged<PushParser>
             .fromOpaque(context)
             .takeUnretainedValue()
+
         return parser
     }
 

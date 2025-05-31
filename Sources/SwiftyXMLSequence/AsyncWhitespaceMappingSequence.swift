@@ -35,7 +35,7 @@ extension AsyncSequence {
     ) async rethrows -> AsyncWhitespaceMappingSequence<Self, T>
         where Element == ParsingEvent<T>
     {
-        return try await AsyncWhitespaceMappingSequence(base: self, policy: policy)
+        try await AsyncWhitespaceMappingSequence(base: self, policy: policy)
     }
 }
 

@@ -37,7 +37,9 @@ extension AsyncSequence {
             return false
         }
         .flatMap { chunk in
-            if let first = chunk.first, case .text(_) = first {
+            if let first = chunk.first,
+               case .text(_) = first
+            {
                 let text = chunk.compactMap {
                     if case .text(let string) = $0 { return string }
                     return nil
