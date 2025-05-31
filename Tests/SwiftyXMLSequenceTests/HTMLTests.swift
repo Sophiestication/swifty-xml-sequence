@@ -241,9 +241,9 @@ struct HTMLTests {
 
     @Test func parseAndCompareHTML() async throws {
         await tryAndFailIfNeeded {
-            let data = "   <html>   <b>Hello</b>,   World!   </html>   ".data(using: .utf8)!
-
-            let text = try await data
+           let text = try await
+                "   <body>   <b>Hello</b>&#44;<br />   World&#33;   </body>   "
+                .data(using: .utf8)!
                 .html()
                 .async
                 .map(whitespace: { element, _ in
@@ -265,7 +265,7 @@ struct HTMLTests {
                     partialResult + string
                 }
 
-            let expectedText = "Hello, World!"
+            let expectedText = "Hello,\nWorld!"
 
             #expect(text == expectedText)
         }
