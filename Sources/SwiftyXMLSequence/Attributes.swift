@@ -64,6 +64,6 @@ extension Attributes: Identifiable {
 
 extension Attributes {
     public var `class`: some Collection<Substring> {
-        (self["class"] ?? String()).matches(of: /\S+/).lazy.map(\.output) // 🕶️
+        (self["class"] ?? String()).lazy.split(whereSeparator: \.isWhitespace) // 🕶️
     }
 }
