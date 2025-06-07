@@ -250,7 +250,7 @@ struct HTMLTests {
                     element.whitespacePolicy
                 })
                 .map(linebreaks: { element, _ in
-                    "\n"
+                    "↩︎"
                 })
                 .collapse()
                 .compactMap { event in
@@ -265,7 +265,7 @@ struct HTMLTests {
                     partialResult + string
                 }
 
-            let expectedText = "Hello,\nWorld!"
+            let expectedText = "Hello,↩︎World!"
 
             #expect(text == expectedText)
         }
