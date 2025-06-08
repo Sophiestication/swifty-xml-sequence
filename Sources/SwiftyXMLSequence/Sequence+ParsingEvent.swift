@@ -24,43 +24,13 @@
 
 import AsyncAlgorithms
 
-extension AsyncSequence {
-    public func joinAdjacentText<T: ElementRepresentable>(
-    ) async rethrows -> AsyncThrowingFlatMapSequence<
-        AsyncChunkedByGroupSequence<Self, [Element]>,
-        AsyncSyncSequence<[Element]>
-    >
-        where Element == ParsingEvent<T>
-    {
-        chunked {
-            if case .text(_) = $0, case .text(_) = $1 { return true }
-            return false
-        }
-        .flatMap { chunk in
-            if let first = chunk.first,
-               case .text(_) = first
-            {
-                let text = chunk.compactMap {
-                    if case .text(let string) = $0 { return string }
-                    return nil
-                }.joined()
-
-                let joinedEvent: Element = .text(text)
-                return [joinedEvent].async
-            }
-
-            return chunk.async
-        }
-    }
-}
-
-extension AsyncSequence {
+extension Sequence {
     public func joinedText<T: ElementRepresentable>(
         into initialResult: String = String()
-    ) async rethrows -> String
+    ) -> String
         where Element == ParsingEvent<T>
     {
-        try await reduce(into: initialResult) { partialResult, event in
+        reduce(into: initialResult) { partialResult, event in
             switch event {
             case .text(let string):
                 partialResult += string

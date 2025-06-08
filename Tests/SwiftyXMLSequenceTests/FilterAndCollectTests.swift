@@ -62,14 +62,7 @@ struct FilterAndCollectTests {
             default:
                 false
             }
-        }.reduce(String()) { partialResult, event in
-            return switch event {
-            case .text(let string):
-                partialResult + string
-            default:
-                partialResult
-            }
-        }
+        }.joinedText()
 
         #expect(title == "Der Blaue Reiter")
     }
@@ -83,14 +76,7 @@ struct FilterAndCollectTests {
                 default:
                     false
                 }
-            }.reduce(String()) { partialResult, event in
-                return switch event {
-                case .text(let string):
-                    partialResult + string
-                default:
-                    partialResult
-                }
-            }
+            }.joinedText()
 
         #expect(title == "Der Blaue Reiter")
     }
@@ -109,14 +95,7 @@ struct FilterAndCollectTests {
             }
         }.filter { element, attributes in
             attributes.id == "mwqA"
-        }.reduce(String()) { partialResult, event in
-            return switch event {
-            case .text(let string):
-                partialResult + string
-            default:
-                partialResult
-            }
-        }
+        }.joinedText()
 
         #expect(listItem == "Kandinsky's \"On Stage Composition\"")
     }
@@ -132,14 +111,7 @@ struct FilterAndCollectTests {
                 }
             }.filter { element, attributes in
                 attributes.id == "mwqA"
-            }.reduce(String()) { partialResult, event in
-                return switch event {
-                case .text(let string):
-                    partialResult + string
-                default:
-                    partialResult
-                }
-            }
+            }.joinedText()
 
         #expect(listItem == "Kandinsky's \"On Stage Composition\"")
     }
